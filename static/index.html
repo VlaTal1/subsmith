@@ -10,13 +10,13 @@
   <!-- ============================== Home ================================== -->
   <section id="view-home" class="view" hidden>
     <header class="topbar">
-      <div class="brand"><span class="logo">Cc</span> subsmith</div>
-      <a class="btn ghost" href="/teleprompter.html">🎙 Teleprompter</a>
+      <div class="brand"><span class="logo" aria-hidden="true"></span> subsmith</div>
+      <a class="btn ghost" href="/teleprompter.html"><i data-icon="mic"></i>Teleprompter</a>
     </header>
     <main class="home">
       <label id="dropzone" class="dropzone">
         <input id="file-input" type="file" accept="video/*" hidden>
-        <div class="dz-icon">＋</div>
+        <div class="dz-icon"><i data-icon="upload"></i></div>
         <div class="dz-title">Upload a video</div>
         <div class="dz-sub">Drop a file here or click to choose one. Speech is transcribed automatically.</div>
         <div id="upload-progress" class="progress" hidden><div></div></div>
@@ -30,12 +30,12 @@
   <!-- ============================== Editor ================================ -->
   <section id="view-editor" class="view editor" hidden>
     <header class="topbar">
-      <a class="btn ghost icon" href="#/" title="Back to projects">←</a>
+      <a class="btn ghost icon" href="#/" title="Back to projects"><i data-icon="arrow-left"></i></a>
       <input id="project-name" class="project-name" spellcheck="false">
       <span id="save-status" class="muted small"></span>
       <div class="spacer"></div>
-      <button id="btn-undo" class="btn ghost icon" title="Undo (Ctrl+Z)">↶</button>
-      <button id="btn-redo" class="btn ghost icon" title="Redo (Ctrl+Shift+Z)">↷</button>
+      <button id="btn-undo" class="btn ghost icon" title="Undo (Ctrl+Z)"><i data-icon="undo"></i></button>
+      <button id="btn-redo" class="btn ghost icon" title="Redo (Ctrl+Shift+Z)"><i data-icon="redo"></i></button>
       <button id="btn-export-top" class="btn primary">Export</button>
     </header>
 
@@ -46,15 +46,15 @@
             <video id="video" playsinline preload="auto"></video>
             <div id="sub-layer" class="sub-layer"></div>
             <div id="snap-guide" class="snap-guide" hidden></div>
-            <div id="big-play" class="big-play">▶</div>
+            <div id="big-play" class="big-play"><i data-icon="play"></i></div>
           </div>
         </div>
         <div class="transport">
-          <button id="btn-play" class="btn ghost icon" title="Space">▶</button>
+          <button id="btn-play" class="btn ghost icon" title="Space"><i data-icon="play"></i></button>
           <span id="time" class="time">0:00.0 / 0:00.0</span>
           <div class="spacer"></div>
           <button id="btn-move-mode" class="btn ghost small" title="What moves when you drag text over the video"></button>
-          <button id="btn-size" class="btn ghost icon" title="Preview size">⤡</button>
+          <button id="btn-size" class="btn ghost icon" title="Preview size"><i data-icon="minimize"></i></button>
           <label class="small muted">Zoom <input id="zoom" type="range" min="20" max="400" value="90"></label>
         </div>
         <div id="timeline" class="timeline">
@@ -121,23 +121,27 @@
           </div>
 
           <div id="text-tools" class="card compact" hidden>
-            <div class="row wrap">
-              <label class="inline">Words per caption <input id="chunk-words" type="number" min="1" max="20" value="4"></label>
-              <label class="inline">Characters <input id="chunk-chars" type="number" min="5" max="80" value="22"></label>
+            <div class="tool-row">
+              <span class="tool-label">Split</span>
+              <label class="inline" title="Max words per caption">Words <input id="chunk-words" type="number" min="1" max="20" value="4"></label>
+              <label class="inline" title="Max characters per caption">Chars <input id="chunk-chars" type="number" min="5" max="80" value="22"></label>
+              <div class="spacer"></div>
               <button id="btn-rechunk" class="btn small">Re-split</button>
             </div>
-            <div class="row wrap">
-              <span class="small muted">Shift all:</span>
+            <div class="tool-row">
+              <span class="tool-label">Shift all</span>
               <button class="btn small" data-shift="-0.1">−0.1 s</button>
               <button class="btn small" data-shift="0.1">+0.1 s</button>
-              <div class="spacer"></div>
-              <button id="btn-add-cap" class="btn small">＋ Caption</button>
-              <button id="btn-restt" class="btn small ghost">Transcribe again</button>
             </div>
-            <div class="row">
+            <div class="tool-row">
               <input id="find" placeholder="Find" class="grow">
               <input id="replace" placeholder="Replace with" class="grow">
               <button id="btn-replace" class="btn small">Replace all</button>
+            </div>
+            <div class="tool-row tool-footer">
+              <button id="btn-add-cap" class="btn small"><i data-icon="plus"></i>Caption</button>
+              <div class="spacer"></div>
+              <button id="btn-restt" class="btn small ghost"><i data-icon="rotate-ccw"></i>Transcribe again</button>
             </div>
           </div>
 
@@ -181,8 +185,8 @@
                 <div class="chips-grid ce-fx-type">
                   <button data-v="">None</button><button data-v="glow">Glow</button><button data-v="shadow">Shadow</button>
                   <button data-v="outline">Outline</button><button data-v="marker">Marker</button><button data-v="underline">Underline</button>
-                  <button data-v="sparkle">✦ Sparkles</button><button data-v="hearts">♥ Hearts</button><button data-v="confetti">Confetti</button>
-                  <button data-v="fireflies">Fireflies</button><button data-v="bubbles">Bubbles</button><button data-v="snow">❄ Snow</button>
+                  <button data-v="sparkle">Sparkles</button><button data-v="hearts">Hearts</button><button data-v="confetti">Confetti</button>
+                  <button data-v="fireflies">Fireflies</button><button data-v="bubbles">Bubbles</button><button data-v="snow">Snow</button>
                   <button data-v="burst">Burst</button>
                 </div>
                 <div class="ce-fx-opts">
@@ -214,12 +218,14 @@
             </div>
           </div>
           <div class="card">
+            <h3>Text</h3>
             <label data-for="font">Font <select id="st-font"></select></label>
             <div class="slider"><span>Size</span><input id="st-fontSize" type="range" min="2.5" max="14" step="0.1"><output></output></div>
             <label class="check"><input id="st-uppercase" type="checkbox"> UPPERCASE</label>
             <label class="check" data-for="reveal"><input id="st-reveal" type="checkbox"> Words appear as they are spoken</label>
           </div>
           <div class="card">
+            <h3>Colors</h3>
             <div class="colors">
               <label data-for="color">Text <input id="st-color" type="color"></label>
               <label data-for="highlightColor">Accent <input id="st-highlightColor" type="color"></label>
@@ -232,7 +238,8 @@
             <div class="slider" data-for="wordScale"><span>Word scale</span><input id="st-wordScale" type="range" min="1" max="1.5" step="0.01"><output></output></div>
           </div>
           <div class="card">
-            <p class="small muted">You can drag the text right on the video.</p>
+            <h3>Position &amp; motion</h3>
+            <p class="hint">You can also drag the text right on the video.</p>
             <div class="slider"><span>Horizontal</span><input id="st-x" type="range" min="5" max="95" step="0.5"><output></output></div>
             <div class="slider"><span>From bottom</span><input id="st-position" type="range" min="2" max="90" step="1"><output></output></div>
             <div class="slider" data-for="lineSpacing"><span>Line spacing</span><input id="st-lineSpacing" type="range" min="0.6" max="2" step="0.05"><output></output></div>
@@ -259,7 +266,7 @@
             </div>
             <div id="render-result" hidden>
               <video id="result-video" controls playsinline></video>
-              <a id="btn-download" class="btn primary wide" download>⬇ Download MP4</a>
+              <a id="btn-download" class="btn primary wide" download><i data-icon="download"></i>Download MP4</a>
             </div>
           </div>
           <div class="card">

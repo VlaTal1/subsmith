@@ -5,6 +5,9 @@ import {
   captionText, chunkWords, flattenWords, fmtTime, mergeCaptions, parseTime,
   retimeRange, retimeText, shiftAll, splitCaption, toSRT, toTXT, toVTT,
 } from "./captions.js";
+import { hydrateIcons, icon, setIcon } from "./icons.js";
+
+hydrateIcons();
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -99,7 +102,7 @@ async function showHome() {
         <div class="p-name"></div>
         <div class="small muted">${fmtTime(p.duration, false)} · ${p.width}×${p.height}${p.hasOutput ? " · ✓ exported" : ""}</div>
       </div>
-      <button class="p-del btn ghost icon small" title="Delete">✕</button>`;
+      <button class="p-del btn ghost icon small" title="Delete">${icon("x")}</button>`;
     $(".p-name", card).textContent = p.name;
     $(".p-del", card).onclick = async (e) => {
       e.preventDefault();
@@ -323,7 +326,7 @@ function togglePlay() {
   if (video.paused) video.play(); else video.pause();
 }
 video.onplay = video.onpause = () => {
-  $("#btn-play").textContent = video.paused ? "▶" : "❚❚";
+  setIcon($("#btn-play"), video.paused ? "play" : "pause");
   $("#big-play").hidden = !video.paused;
 };
 video.onloadedmetadata = layoutFrame;
@@ -333,7 +336,7 @@ $("#btn-play").onclick = togglePlay;
 let compactPinned = localStorage.getItem("compact-preview") === "1";
 function setCompact(on) {
   $("#view-editor").classList.toggle("compact", on);
-  $("#btn-size").textContent = on ? "⤢" : "⤡";
+  setIcon($("#btn-size"), on ? "maximize" : "minimize");
   setTimeout(layoutFrame, 220); // after the height animation
 }
 setCompact(compactPinned);
@@ -357,7 +360,7 @@ function seek(t) {
 
 let moveOne = localStorage.getItem("move-one") === "1";
 function syncMoveMode() {
-  $("#btn-move-mode").textContent = moveOne ? "✥ This caption" : "✥ All captions";
+  setIcon($("#btn-move-mode"), "move", moveOne ? "This caption" : "All captions");
   $("#btn-move-mode").classList.toggle("on", moveOne);
 }
 syncMoveMode();
@@ -547,12 +550,12 @@ function renderCaptionList() {
         <span class="muted">→</span>
         <input class="t-end" value="${fmtTime(c.end)}" title="End">
         <div class="spacer"></div>
-        ${c.pos ? '<button class="btn ghost icon small pos-reset" data-act="unpos" title="Custom position — reset to shared">⌖</button>' : ""}
-        <button class="btn ghost icon small" data-act="split" title="Split at cursor">✂</button>
-        <button class="btn ghost icon small" data-act="toPrev" title="Move text to the end of the previous caption (Backspace at the start)" ${i === 0 ? "disabled" : ""}>⤒</button>
-        <button class="btn ghost icon small" data-act="toNext" title="Move text to the start of the next caption" ${i === ed.captions.length - 1 ? "disabled" : ""}>⤓</button>
-        <button class="btn ghost icon small" data-act="insert" title="Insert empty caption after">＋</button>
-        <button class="btn ghost icon small" data-act="delete" title="Delete">✕</button>
+        ${c.pos ? `<button class="btn ghost icon small pos-reset" data-act="unpos" title="Custom position — reset to shared">${icon("locate")}</button>` : ""}
+        <button class="btn ghost icon small" data-act="split" title="Split at cursor">${icon("scissors")}</button>
+        <button class="btn ghost icon small" data-act="toPrev" title="Move text to the end of the previous caption (Backspace at the start)" ${i === 0 ? "disabled" : ""}>${icon("to-prev")}</button>
+        <button class="btn ghost icon small" data-act="toNext" title="Move text to the start of the next caption" ${i === ed.captions.length - 1 ? "disabled" : ""}>${icon("to-next")}</button>
+        <button class="btn ghost icon small" data-act="insert" title="Insert empty caption after">${icon("plus")}</button>
+        <button class="btn ghost icon small" data-act="delete" title="Delete">${icon("x")}</button>
       </div>
       <textarea rows="1" spellcheck="true"></textarea>
       <div class="chips"></div>`;
@@ -646,7 +649,7 @@ function renderChips(box, i) {
   box.innerHTML = "";
   cap.words.forEach((w, j) => {
     const [role, newLine, roleIdx] = layout[j];
-    if (newLine) box.insertAdjacentHTML("beforeend", '<span class="chip-br" title="New line">↵</span>');
+    if (newLine) box.insertAdjacentHTML("beforeend", `<span class="chip-br" title="New line">${icon("corner-down-left")}</span>`);
     const chip = document.createElement("button");
     chip.className = `chip role-${roleIdx}`;
     chip.textContent = applyCase(w.text, role.case, ed.style.uppercase);
@@ -954,7 +957,7 @@ function renderCombos() {
       const edit = document.createElement("span");
       edit.className = "p-edit";
       edit.title = "Edit style";
-      edit.textContent = "✎";
+      edit.innerHTML = icon("pencil");
       edit.onclick = (e) => { e.stopPropagation(); openComboEditor(c); };
       b.appendChild(edit);
     }
@@ -962,7 +965,7 @@ function renderCombos() {
   }
   const add = document.createElement("button");
   add.className = "preset preset-add";
-  add.innerHTML = '<span class="plus">＋</span><span class="pn">Custom style</span>';
+  add.innerHTML = `<span class="plus">${icon("plus")}</span><span class="pn">Custom style</span>`;
   add.onclick = () => openComboEditor(null);
   box.appendChild(add);
   syncStyleControls();
@@ -1088,7 +1091,7 @@ function renderFontPicker(picker, role) {
   const open = picker.classList.contains("open");
   picker.innerHTML = "";
   const cur = fontTile("fp-current", role.font, role);
-  cur.insertAdjacentHTML("beforeend", '<span class="fp-caret">▾</span>');
+  cur.insertAdjacentHTML("beforeend", `<span class="fp-caret">${icon("chevron-down")}</span>`);
   picker.appendChild(cur);
   const grid = document.createElement("div");
   grid.className = "fp-grid";

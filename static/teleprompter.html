@@ -11,8 +11,8 @@
   <!-- ---------- setup ---------- -->
   <section id="setup">
     <header class="topbar">
-      <a class="btn ghost icon" href="/" title="Back to projects">←</a>
-      <div class="brand"><span class="logo">Cc</span> Teleprompter</div>
+      <a class="btn ghost icon" href="/" title="Back to projects"><i data-icon="arrow-left"></i></a>
+      <div class="brand"><span class="logo" aria-hidden="true"></span> Teleprompter</div>
     </header>
     <main class="tp-setup">
       <div class="card">
@@ -21,6 +21,7 @@
         <div class="small muted" id="script-info"></div>
       </div>
       <div class="card">
+        <h3>Playback</h3>
         <div class="slider"><span>Speed</span><input id="speed" type="range" min="10" max="300" step="5" value="70"><output></output></div>
         <div class="slider"><span>Text size</span><input id="size" type="range" min="20" max="120" step="1" value="48"><output></output></div>
         <div class="slider"><span>Text width</span><input id="width" type="range" min="40" max="100" step="1" value="90"><output></output></div>
@@ -38,7 +39,7 @@
           </label>
         </div>
         <button id="btn-start" class="btn primary wide">Start</button>
-        <p class="small muted">Space — pause/start, ↑/↓ — speed, mouse wheel — scroll, Esc — exit.</p>
+        <p class="hint hint-after">Space — pause/start, ↑/↓ — speed, mouse wheel — scroll, Esc — exit.</p>
       </div>
     </main>
   </section>
@@ -50,28 +51,28 @@
     <div id="scroller" class="scroller"><div id="text" class="tp-text"></div></div>
     <div class="focus-line"></div>
     <div id="countdown" class="countdown" hidden></div>
-    <div id="rec-badge" class="rec-badge" hidden>● REC <span id="rec-time">0:00</span></div>
+    <div id="rec-badge" class="rec-badge" hidden><span class="rec-dot"></span>REC <span id="rec-time">0:00</span></div>
     <div class="tp-controls">
-      <button id="btn-exit" class="btn icon" title="Exit">✕</button>
-      <button id="btn-slower" class="btn icon" title="Slower">−</button>
+      <button id="btn-exit" class="btn icon" title="Exit"><i data-icon="x"></i></button>
+      <button id="btn-slower" class="btn icon" title="Slower"><i data-icon="minus"></i></button>
       <span id="speed-label" class="small">70</span>
-      <button id="btn-faster" class="btn icon" title="Faster">＋</button>
-      <button id="btn-toggle" class="btn primary">▶ Start</button>
-      <button id="btn-restart" class="btn icon" title="Back to start">⟲</button>
+      <button id="btn-faster" class="btn icon" title="Faster"><i data-icon="plus"></i></button>
+      <button id="btn-toggle" class="btn primary"><i data-icon="play"></i>Start</button>
+      <button id="btn-restart" class="btn icon" title="Back to start"><i data-icon="rotate-ccw"></i></button>
     </div>
   </section>
 
   <!-- ---------- recording result ---------- -->
   <section id="result" hidden>
     <header class="topbar">
-      <button id="btn-back" class="btn ghost icon" title="Back">←</button>
+      <button id="btn-back" class="btn ghost icon" title="Back"><i data-icon="arrow-left"></i></button>
       <div class="brand">Recording ready</div>
     </header>
     <main class="tp-setup">
       <video id="recorded" controls playsinline></video>
       <div class="row wrap">
         <button id="btn-subs" class="btn primary">Make subtitles</button>
-        <a id="btn-save" class="btn">⬇ Download recording</a>
+        <a id="btn-save" class="btn"><i data-icon="download"></i>Download recording</a>
         <button id="btn-retake" class="btn ghost">Retake</button>
       </div>
       <div id="up-progress" class="progress" hidden><div></div></div>

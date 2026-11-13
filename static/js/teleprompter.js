@@ -1,4 +1,7 @@
+import { hydrateIcons, setIcon } from "./icons.js";
+
 const $ = (s) => document.querySelector(s);
+hydrateIcons();
 
 const SETTINGS = ["speed", "size", "width", "mirror", "camera", "aspect"];
 const store = JSON.parse(localStorage.getItem("tp-settings") || "{}");
@@ -182,7 +185,7 @@ async function togglePlay() {
 
 function setPlayButton() {
   const rec = !!tp.stream;
-  $("#btn-toggle").textContent = tp.playing ? "❚❚ Pause" : rec && !tp.recorder ? "● Record" : "▶ Start";
+  setIcon($("#btn-toggle"), tp.playing ? "pause" : rec && !tp.recorder ? "record" : "play", tp.playing ? "Pause" : rec && !tp.recorder ? "Record" : "Start");
 }
 
 function applyPos() {

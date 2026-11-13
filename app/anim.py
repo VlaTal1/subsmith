@@ -1,6 +1,6 @@
-"""Анимации второго шрифта: состояние слова во времени и события ASS для анимированной копии.
+"""Second-font animations: word state over time and ASS events for the animated copy.
 
-Та же математика — в static/js/overlay.js (animState). Менять синхронно.
+The same math lives in static/js/overlay.js (animState). Keep them in sync.
 """
 
 from __future__ import annotations
@@ -9,9 +9,9 @@ import colorsys
 import math
 
 ANIMS = ("pulse", "float", "swing", "shake", "flicker", "rainbow", "bounce", "glowpulse")
-# Пошаговые анимации: значение меняется скачком раз в шаг (секунд при скорости 5)
+# Stepped animations: the value jumps once per step (seconds at speed 5)
 STEP = {"shake": 0.07, "flicker": 0.06}
-FADE = 0.18  # плавное появление слова, с
+FADE = 0.18  # word fade-in, s
 
 
 def mulberry32(seed: int):
@@ -45,10 +45,10 @@ def lerp_keys(keys: list[tuple[float, float]], u: float) -> float:
 
 
 def anim_state(anim: dict, tau: float, seed: int) -> dict:
-    """Состояние слова через tau секунд после появления.
+    """Word state tau seconds after it appears.
 
-    dx, dy — сдвиг в долях высоты слова; scale; rot — градусы; alpha 0..1;
-    color — цвет текста или None; glow — множитель свечения или None.
+    dx, dy — offset in fractions of the word height; scale; rot — degrees; alpha 0..1;
+    color — text color or None; glow — glow multiplier or None.
     """
     a = float(anim.get("strength", 5)) / 5
     sp = float(anim.get("speed", 5)) / 5
@@ -80,7 +80,7 @@ def anim_state(anim: dict, tau: float, seed: int) -> dict:
 
 
 def segment_times(anim: dict, appear: float, end: float) -> list[float]:
-    """Границы отрезков (кратны 1/100 с — точность времени в ASS)."""
+    """Segment boundaries (multiples of 1/100 s — the ASS time precision)."""
     kind = anim.get("type")
     sp = float(anim.get("speed", 5)) / 5
     if kind in STEP:
@@ -94,7 +94,7 @@ def segment_times(anim: dict, appear: float, end: float) -> list[float]:
         times = [round(x / 100, 2) for x in range(round(appear * 100), round(end * 100), 5)]
         times.append(round(end * 100) / 100)
     out = []
-    for x in times:  # убрать повторы после округления
+    for x in times:  # drop duplicates after rounding
         if not out or x > out[-1]:
             out.append(x)
     return out

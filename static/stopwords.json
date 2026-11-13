@@ -1,5 +1,5 @@
 {
- "_comment": "stop — служебные слова (не бывают акцентом); attach — предлоги, союзы, частицы и местоимения: тянутся к следующему слову, после них строку не рвём",
+ "_comment": "stop — function words (never an accent); attach — prepositions, conjunctions, particles and pronouns: they stick to the next word, never break a line after them",
  "stop": [
   "a",
   "an",

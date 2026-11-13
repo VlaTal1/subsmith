@@ -1,4 +1,4 @@
-"""Генерация ASS-субтитров из списка подписей (captions) и настроек стиля.
+"""Generates ASS subtitles from a list of captions and style settings.
 
 caption = {"start": float, "end": float, "words": [{"text": str, "start": float, "end": float}, ...]}
 """
@@ -15,24 +15,24 @@ from .particles import BARS, PARTICLES, particle_events
 DEFAULT_STYLE = {
     "preset": "highlight",  # classic | box | highlight | wordbox | karaoke | pop | combo
     "font": "Montserrat",
-    "fontSize": 6.5,  # % от высоты видео
+    "fontSize": 6.5,  # % of video height
     "uppercase": True,
     "color": "#FFFFFF",
     "highlightColor": "#FFE600",
     "outlineColor": "#000000",
-    "outline": 6,  # px при высоте 1080
-    "shadow": 0,  # px при высоте 1080
+    "outline": 6,  # px at 1080 height
+    "shadow": 0,  # px at 1080 height
     "boxColor": "#000000",
     "boxOpacity": 0.6,
-    "position": 22,  # отступ снизу, % от высоты
-    "maxWidth": 84,  # ширина блока текста, % от ширины
-    "x": 50,  # центр блока по горизонтали, % от ширины
-    "lineSpacing": 1.0,  # межстрочный интервал, 1 — как у шрифта
+    "position": 22,  # bottom offset, % of height
+    "maxWidth": 84,  # text block width, % of width
+    "x": 50,  # horizontal block center, % of width
+    "lineSpacing": 1.0,  # line spacing, 1 = font default
     "animation": "pop",  # none | pop | fade
-    "wordScale": 1.12,  # увеличение активного слова
-    "reveal": False,  # слова появляются по мере произнесения
-    "combo": "elegant",  # шаблон для preset == "combo" (static/combos.json или свой custom-…)
-    "comboDef": None,  # копия своего шаблона — на случай, если его удалят из библиотеки
+    "wordScale": 1.12,  # active word scale-up
+    "reveal": False,  # words appear as they are spoken
+    "combo": "elegant",  # template for preset == "combo" (static/combos.json or a custom-… one)
+    "comboDef": None,  # copy of the custom template — in case it gets deleted from the library
 }
 
 
@@ -57,7 +57,7 @@ def ass_inline_color(hex_color: str) -> str:
 
 
 def contrast_text(hex_color: str) -> str:
-    """Чёрный или белый текст — что лучше читается на фоне данного цвета."""
+    """Black or white text — whichever reads better on the given background color."""
     h = hex_color.lstrip("#")
     if len(h) == 3:
         h = "".join(c * 2 for c in h)
@@ -66,22 +66,22 @@ def contrast_text(hex_color: str) -> str:
 
 
 def block_margins(x: float, y: float, max_width: float, width: int, height: int) -> tuple[int, int, int]:
-    """Отступы блока текста: центр по горизонтали в x% ширины, низ блока в y% высоты от низа.
+    """Text block margins: horizontal center at x% of width, block bottom at y% of height from the bottom.
 
-    У края кадра блок сужается (текст переносится), чтобы не вылезать за кадр.
-    Та же формула — в static/js/overlay.js (blockBox).
+    Near the frame edge the block narrows (text wraps) so it stays inside the frame.
+    The same formula lives in static/js/overlay.js (blockBox).
     """
     x = max(0.0, min(100.0, float(x)))
     half = min(float(max_width) / 2, x, 100 - x)
     return round(width * (x - half) / 100), round(width * (100 - x - half) / 100), round(height * float(y) / 100)
 
 
-# ---------------------------------------------------------------- эффекты второго шрифта
-# Та же логика в static/js/overlay.js (fxTextShadow, sparkleStars) — менять синхронно.
+# ---------------------------------------------------------------- second-font effects
+# Same logic in static/js/overlay.js (fxTextShadow, sparkleStars) — keep them in sync.
 
 
 def fx_tags(fx: dict | None, k: float):
-    """Теги оформления слова с эффектом и целевые альфы обводки/тени для плавного появления."""
+    """Styling tags for a word with an effect, plus target outline/shadow alphas for the fade-in."""
     if not fx or fx.get("type") in (None, "none", "sparkle"):
         return None
     c = ass_inline_color(fx.get("color") or "#FFFFFF")
@@ -108,8 +108,8 @@ def _alpha(base_hex: str, f: float) -> str:
 
 
 def anim_events(cap: dict, j: int, box: list, appear: float, end: float, copy: tuple, s: dict, k: float) -> list[str]:
-    """Анимированная копия слова поверх его места в строке (само слово в строке скрыто,
-    чтобы масштаб и поворот не сдвигали соседей). box — [x, y, w, h] от предпросмотра."""
+    """Animated copy of a word drawn over its place in the line (the word itself is hidden in the line
+    so scaling and rotation don't shift its neighbours). box — [x, y, w, h] from the preview."""
     base_tags, text, a1, t3, t4, role = copy
     anim = role["anim"]
     seed = int(float(cap["start"]) * 1000 + 0.5) * 31 + j + 17
@@ -143,7 +143,7 @@ def anim_events(cap: dict, j: int, box: list, appear: float, end: float, copy: t
             segs.append([t_a, t_b, st, st])
         else:
             segs.append([t_a, t_b, anim_state(anim, t_a - appear, seed), anim_state(anim, t_b - appear, seed)])
-    merged = []  # подряд идущие неподвижные отрезки — одним событием
+    merged = []  # consecutive static segments — merged into one event
     for seg in segs:
         if merged and seg[2] == seg[3] == merged[-1][2] == merged[-1][3]:
             merged[-1][1] = seg[1]
@@ -161,11 +161,11 @@ def anim_events(cap: dict, j: int, box: list, appear: float, end: float, copy: t
 def sparkle_stars(start: float, j: int, strength: float) -> list[dict]:
     rnd = mulberry32(int(start * 1000 + 0.5) * 31 + j)
     stars = []
-    for _ in range(2 + int(strength + 0.5)):  # не round(): в Python 4.5 → 4, а в JS → 5
+    for _ in range(2 + int(strength + 0.5)):  # not round(): in Python 4.5 → 4, but in JS → 5
         stars.append({
-            "x": -0.15 + rnd() * 1.3,  # центр звезды: доля ширины слова
-            "y": -0.25 + rnd() * 1.5,  # доля высоты слова
-            "size": 0.22 + rnd() * 0.25,  # размах: доля высоты слова
+            "x": -0.15 + rnd() * 1.3,  # star center: fraction of word width
+            "y": -0.25 + rnd() * 1.5,  # fraction of word height
+            "size": 0.22 + rnd() * 0.25,  # span: fraction of word height
             "rot": rnd() * 40 - 20,
             "delay": rnd() * 0.9,
             "period": 0.8 + rnd() * 0.7,
@@ -174,7 +174,7 @@ def sparkle_stars(start: float, j: int, strength: float) -> list[dict]:
 
 
 def sparkle_events(cap: dict, j: int, box: list, appear: float, end: float, fx: dict, k: float) -> list[str]:
-    """Мерцающие звёзды вокруг слова. box — [x, y, w, h] слова в пикселях видео (от предпросмотра)."""
+    """Twinkling stars around a word. box — the word's [x, y, w, h] in video pixels (from the preview)."""
     x0, y0, w, h = (float(v) for v in box)
     color = ass_inline_color(fx.get("color") or "#FFFFFF")
     out = []
@@ -182,7 +182,7 @@ def sparkle_events(cap: dict, j: int, box: list, appear: float, end: float, fx: 
         cx, cy, r = x0 + star["x"] * w, y0 + star["y"] * h, star["size"] * h / 2
         pts = [(0, -r), (0.2 * r, -0.2 * r), (r, 0), (0.2 * r, 0.2 * r), (0, r), (-0.2 * r, 0.2 * r), (-r, 0), (-0.2 * r, -0.2 * r)]
         draw = "m {:.1f} {:.1f} l ".format(*pts[0]) + " ".join(f"{px:.1f} {py:.1f}" for px, py in pts[1:])
-        d = star["period"] * 0.6  # видимая часть цикла: вспыхнуть и погаснуть
+        d = star["period"] * 0.6  # visible part of the cycle: flash and fade
         t = appear + star["delay"]
         while t < end - 0.02:
             te = min(t + d, end)
@@ -202,7 +202,7 @@ _METRICS: dict[str, tuple[float, float]] = {}
 
 
 def font_metrics(name: str) -> tuple[float, float]:
-    """Доли верхнего и нижнего выноса от кегля: libass масштабирует шрифт так, что winAscent+winDescent = кегль."""
+    """Ascender and descender as fractions of the font size: libass scales the font so that winAscent+winDescent = size."""
     if not _METRICS:
         from fontTools.ttLib import TTFont
 
@@ -262,22 +262,22 @@ def build_ass(captions: list[dict], style: dict | None, width: int, height: int)
     border_style = 1
 
     if preset == "box":
-        border_style = 4  # libass: одна сплошная плашка на строку цветом BackColour
+        border_style = 4  # libass: one solid box per line in BackColour
         outline_c = ass_color("#000000", 0.0)
         back_c = ass_color(s["boxColor"], float(s["boxOpacity"]))
         outline = round(font_size * 0.22, 1)
         shadow = 0
     elif preset == "wordbox":
         border_style = 3
-        outline_c = ass_color(s["highlightColor"], 0.0)  # бокс скрыт, включается на активном слове
+        outline_c = ass_color(s["highlightColor"], 0.0)  # box hidden, shown on the active word
         back_c = ass_color("#000000", 0.0)
         outline = round(font_size * 0.16, 1)
         shadow = 0
     elif preset == "combo":
         s["font"] = get_combo(s["combo"], s.get("comboDef"))["roles"][0]["font"]
     elif preset == "karaoke":
-        primary = ass_color(s["highlightColor"])  # заполненная часть
-        secondary = ass_color(s["color"])  # ещё не спетая часть
+        primary = ass_color(s["highlightColor"])  # filled part
+        secondary = ass_color(s["color"])  # not yet sung part
 
     header = f"""[Script Info]
 ScriptType: v4.00+
@@ -296,7 +296,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     lines: list[str] = []
 
-    event_margins = "0,0,0"  # 0 — взять отступы из стиля; иначе позиция конкретной подписи
+    event_margins = "0,0,0"  # 0 — use the style margins; otherwise this caption's own position
 
     def add(start: float, end: float, text: str, layer: int = 0) -> None:
         if end - start < 0.01:
@@ -307,19 +307,19 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     on_box = ass_inline_color(contrast_text(s["highlightColor"]))
     scale = round(float(s["wordScale"]) * 100)
     reveal = bool(s["reveal"]) or preset == "combo"
-    a3, a4 = outline_c[2:4], back_c[2:4]  # альфа обводки и тени из стиля
+    a3, a4 = outline_c[2:4], back_c[2:4]  # outline and shadow alpha from the style
     combo = get_combo(s["combo"], s.get("comboDef")) if preset == "combo" else None
     spacing = float(s["lineSpacing"])
-    # Межстрочный интервал в ASS не задаётся тегом, поэтому при интервале ≠ 100% каждая строка —
-    # отдельное событие со своей высотой. Где переносить строки, присылает предпросмотр
-    # (cap["lines"]), он переносит ровно как libass. У плашки и «по одному слову» интервала нет.
+    # ASS has no line-spacing tag, so with spacing ≠ 100% every line is a separate event
+    # at its own height. The preview tells us where lines break (cap["lines"]); it wraps
+    # exactly like libass. The box and one-word styles have no line spacing.
     line_mode = abs(spacing - 1) > 1e-3 and preset not in ("box", "pop")
 
     def alpha_tags(j: int, i: int, t1: str = "00", t3: str = a3, t4: str = a4) -> str:
-        """Скрыть ещё не сказанное слово или плавно показать только что сказанное."""
+        """Hide a word not yet spoken, or fade in one just spoken."""
         if not reveal or j < i:
             return ""
-        if preset == "box":  # у плашки альфа BackColour — это прозрачность самой плашки
+        if preset == "box":  # for the box style, BackColour alpha is the box's own transparency
             hide, show = r"\1a&HFF&", rf"\1a&H{t1}&"
         else:
             hide, show = r"\1a&HFF&\3a&HFF&\4a&HFF&", rf"\1a&H{t1}&\3a&H{t3}&\4a&H{t4}&"
@@ -328,11 +328,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         return hide + rf"\t(0,180,{show})"
 
     def emit(start, end, prefix, frags, metrics, hard, starts, cap_margins, line_first=None):
-        """Вывести подпись из слов frags (с тегами).
+        """Emit a caption from the words in frags (with tags).
 
-        metrics[j] — (шрифт, размер) слова, hard[j] — со слова начинается строка (комбо),
-        starts — начала строк от предпросмотра, line_first[j] — вариант слова, если им
-        начинается отдельная строка-событие (нужно караоке).
+        metrics[j] — (font, size) of the word, hard[j] — the word starts a line (combo),
+        starts — line starts from the preview, line_first[j] — the word variant used when it
+        starts a separate line event (needed for karaoke).
         """
         n = len(frags)
         if not line_mode or starts is None:
@@ -345,8 +345,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         asc = [max(sz * font_metrics(fn)[0] for fn, sz in metrics[a:z]) for a, z in rows]
         desc = [max(sz * font_metrics(fn)[1] for fn, sz in metrics[a:z]) for a, z in rows]
         ml, mr, mv = cap_margins
-        # Снизу вверх: базовая линия следующей строки выше на естественный шаг
-        # плюс (интервал−1)·полусумма высот строк — так же считает CSS line-height в предпросмотре
+        # Bottom to top: the next line's baseline is higher by the natural step
+        # plus (spacing−1)·mean of the two line heights — same as CSS line-height in the preview
         base = [0.0] * len(rows)
         base[-1] = height - mv - desc[-1]
         for q in range(len(rows) - 2, -1, -1):
@@ -355,8 +355,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         for q, (a, z) in enumerate(rows):
             parts = [(line_first[a] if line_first else frags[a])] + frags[a + 1:z]
             event_margins = f"{max(1, ml)},{max(1, mr)},{max(1, round(height - base[q] - desc[q]))}"
-            # Свой слой у каждой строки: события одного слоя libass раздвигает, если они
-            # перекрываются (а при сжатом интервале строки перекрываются намеренно)
+            # Each line gets its own layer: libass pushes apart overlapping events on the same layer
+            # (and with tight spacing the lines overlap on purpose)
             add(start, end, prefix + " ".join(parts), layer=q)
 
     def starts_for(cap: dict, i: int):
@@ -378,7 +378,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         n = len(words)
         pos = cap.get("pos")
         if pos:
-            # В Dialogue отступ 0 означает «как в стиле», поэтому минимум 1
+            # In Dialogue a margin of 0 means "use the style", so the minimum is 1
             cap_m = block_margins(pos["x"], pos["y"], s["maxWidth"], width, height)
             event_margins = f"{max(1, cap_m[0])},{max(1, cap_m[1])},{max(1, cap_m[2])}"
         else:
@@ -388,7 +388,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         same = [base_font] * n
 
         def spans():
-            """Интервалы, в которые активно i-е слово."""
+            """Time intervals during which the i-th word is active."""
             for i, w in enumerate(words):
                 ws = c_start if i == 0 else float(w["start"])
                 we = float(words[i + 1]["start"]) if i + 1 < len(words) else c_end
@@ -461,7 +461,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         elif preset in ("classic", "box") and not reveal:
             emit(c_start, c_end, _intro(s), texts, same, flat, starts_for(cap, n - 1), cap_m)
 
-        else:  # highlight | wordbox | classic/box с появлением слов — событие на каждое слово
+        else:  # highlight | wordbox | classic/box with word reveal — one event per word
             for i, ws, we in spans():
                 frags = []
                 for j, t in enumerate(texts):
@@ -478,7 +478,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     return header + "\n".join(lines) + "\n"
 
 
-# ---------------------------------------------------------------- комбинированные стили
+# ---------------------------------------------------------------- combo styles
 
 COMBOS_FILE = Path(__file__).resolve().parent.parent / "static" / "combos.json"
 
@@ -519,7 +519,7 @@ def is_stopword(text: str) -> bool:
 
 
 def emphasis_indices(words: list[dict]) -> set[int]:
-    """Слова-акценты: отмеченные вручную, иначе самое длинное не служебное слово."""
+    """Accent words: those marked manually, otherwise the longest non-stopword."""
     marked = {i for i, w in enumerate(words) if w.get("em")}
     if marked:
         return marked
@@ -533,11 +533,11 @@ def emphasis_indices(words: list[dict]) -> set[int]:
 
 
 def auto_line_starts(words: list[dict], max_lines: int) -> list[int]:
-    """Где начинать строки: перебираем все разбиения и берём самое естественное.
+    """Where to start lines: try every split and pick the most natural one.
 
-    Хорошо рвать строку на паузе в речи и после знака препинания; плохо — оставлять
-    предлог/союз в конце строки или одно служебное слово на строке; строки должны
-    быть примерно равной длины. Логика повторена 1-в-1 в static/js/overlay.js.
+    Breaking at a pause in speech or after punctuation is good; leaving a preposition or
+    conjunction at the end of a line, or a lone stopword on a line, is bad; lines should
+    be roughly equal in length. The logic is mirrored 1:1 in static/js/overlay.js.
     """
     n = len(words)
     if n <= 1 or max_lines <= 1:
@@ -571,13 +571,13 @@ def auto_line_starts(words: list[dict], max_lines: int) -> list[int]:
 
 
 def combo_layout(combo: dict, words: list[dict]) -> list[tuple[dict, bool]]:
-    """Для каждого слова: (роль-оформление, начинается ли с него новая строка)."""
+    """For each word: (styling role, whether it starts a new line)."""
     roles = combo["roles"]
     n = len(words)
     if combo["layout"] == "accent":
         em = emphasis_indices(words)
         return [(roles[1] if i in em else roles[0], False) for i in range(n)]
-    # stack: каждая строка — своим шрифтом; ручные переносы (br) важнее автоматики
+    # stack: each line in its own font; manual breaks (br) override automatic ones
     manual = [i for i in range(1, n) if words[i].get("br")]
     starts = [0, *manual] if manual else auto_line_starts(words, len(roles))
     out, line = [], -1

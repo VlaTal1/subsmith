@@ -1,4 +1,4 @@
-"""Распознавание речи через Vosk (Kaldi) — хорошо работает с украинским языком."""
+"""Speech recognition via Vosk (Kaldi) — works well for Ukrainian."""
 
 from __future__ import annotations
 
@@ -42,14 +42,14 @@ def _download(name: str, on_progress: Callable[[float, str], None] | None) -> Pa
             f.write(chunk)
             done += len(chunk)
             if on_progress and total:
-                on_progress(done / total * 0.99, f"Скачивание модели Vosk ({done >> 20} из {total >> 20} МБ)…")
+                on_progress(done / total * 0.99, f"Downloading Vosk model ({done >> 20} of {total >> 20} MB)…")
     if on_progress:
-        on_progress(0.99, "Распаковка модели…")
+        on_progress(0.99, "Unpacking model…")
     tmp_dir = MODELS_DIR / f"{name}.tmp"
     shutil.rmtree(tmp_dir, ignore_errors=True)
     with zipfile.ZipFile(zip_path) as z:
         z.extractall(tmp_dir)
-    # В архиве одна папка с именем модели
+    # The archive contains a single folder named after the model
     inner = next(tmp_dir.iterdir())
     inner.rename(target)
     shutil.rmtree(tmp_dir, ignore_errors=True)
@@ -59,12 +59,12 @@ def _download(name: str, on_progress: Callable[[float, str], None] | None) -> Pa
 
 def get_model(key: str, on_progress=None) -> Model:
     if key not in MODELS:
-        raise ValueError(f"Неизвестная модель Vosk: {key}")
+        raise ValueError(f"Unknown Vosk model: {key}")
     with _lock:
         if key not in _models:
             path = _download(MODELS[key], on_progress)
             if on_progress:
-                on_progress(0.0, "Загрузка модели…")
+                on_progress(0.0, "Loading model…")
             _models[key] = Model(str(path))
         return _models[key]
 
@@ -93,13 +93,13 @@ def transcribe(path: str, model_key: str = "uk", on_progress: Callable[[float, s
 
     read = 0
     if on_progress:
-        on_progress(0.0, "Распознавание речи…")
+        on_progress(0.0, "Transcribing speech…")
     while chunk := proc.stdout.read(8000):
         read += len(chunk)
         if rec.AcceptWaveform(chunk):
             collect(rec.Result())
             if on_progress:
-                on_progress(min(0.99, read / total_bytes), "Распознавание речи…")
+                on_progress(min(0.99, read / total_bytes), "Transcribing speech…")
     collect(rec.FinalResult())
     proc.wait()
 

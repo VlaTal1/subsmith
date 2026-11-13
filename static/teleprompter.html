@@ -1,49 +1,49 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Телесуфлёр — Субтитры</title>
+  <title>Teleprompter — subsmith</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/teleprompter.css">
 </head>
 <body>
-  <!-- ---------- настройка ---------- -->
+  <!-- ---------- setup ---------- -->
   <section id="setup">
     <header class="topbar">
-      <a class="btn ghost icon" href="/" title="К проектам">←</a>
-      <div class="brand"><span class="logo">Cc</span> Телесуфлёр</div>
+      <a class="btn ghost icon" href="/" title="Back to projects">←</a>
+      <div class="brand"><span class="logo">Cc</span> Teleprompter</div>
     </header>
     <main class="tp-setup">
       <div class="card">
-        <h3>Текст сценария</h3>
-        <textarea id="script" rows="12" placeholder="Вставьте или напишите текст, который будете читать…"></textarea>
+        <h3>Script</h3>
+        <textarea id="script" rows="12" placeholder="Paste or write the text you will read…"></textarea>
         <div class="small muted" id="script-info"></div>
       </div>
       <div class="card">
-        <div class="slider"><span>Скорость</span><input id="speed" type="range" min="10" max="300" step="5" value="70"><output></output></div>
-        <div class="slider"><span>Размер текста</span><input id="size" type="range" min="20" max="120" step="1" value="48"><output></output></div>
-        <div class="slider"><span>Ширина текста</span><input id="width" type="range" min="40" max="100" step="1" value="90"><output></output></div>
+        <div class="slider"><span>Speed</span><input id="speed" type="range" min="10" max="300" step="5" value="70"><output></output></div>
+        <div class="slider"><span>Text size</span><input id="size" type="range" min="20" max="120" step="1" value="48"><output></output></div>
+        <div class="slider"><span>Text width</span><input id="width" type="range" min="40" max="100" step="1" value="90"><output></output></div>
         <div class="row wrap">
-          <label class="check"><input id="mirror" type="checkbox"> Зеркально (для стекла суфлёра)</label>
-          <label class="check"><input id="camera" type="checkbox" checked> Запись с камеры</label>
+          <label class="check"><input id="mirror" type="checkbox"> Mirror (for teleprompter glass)</label>
+          <label class="check"><input id="camera" type="checkbox" checked> Record from camera</label>
         </div>
         <div class="row" id="cam-opts">
-          <label>Камера <select id="cam-select"></select></label>
-          <label>Формат
+          <label>Camera <select id="cam-select"></select></label>
+          <label>Format
             <select id="aspect">
               <option value="portrait">9:16 — Reels, Shorts, TikTok</option>
               <option value="landscape">16:9 — YouTube</option>
             </select>
           </label>
         </div>
-        <button id="btn-start" class="btn primary wide">Начать</button>
-        <p class="small muted">Пробел — пауза/старт, ↑/↓ — скорость, колёсико мыши — прокрутка, Esc — выход.</p>
+        <button id="btn-start" class="btn primary wide">Start</button>
+        <p class="small muted">Space — pause/start, ↑/↓ — speed, mouse wheel — scroll, Esc — exit.</p>
       </div>
     </main>
   </section>
 
-  <!-- ---------- суфлёр ---------- -->
+  <!-- ---------- prompter ---------- -->
   <section id="prompter" hidden>
     <video id="cam" autoplay muted playsinline></video>
     <div id="shade" class="shade"></div>
@@ -52,27 +52,27 @@
     <div id="countdown" class="countdown" hidden></div>
     <div id="rec-badge" class="rec-badge" hidden>● REC <span id="rec-time">0:00</span></div>
     <div class="tp-controls">
-      <button id="btn-exit" class="btn icon" title="Выход">✕</button>
-      <button id="btn-slower" class="btn icon" title="Медленнее">−</button>
+      <button id="btn-exit" class="btn icon" title="Exit">✕</button>
+      <button id="btn-slower" class="btn icon" title="Slower">−</button>
       <span id="speed-label" class="small">70</span>
-      <button id="btn-faster" class="btn icon" title="Быстрее">＋</button>
-      <button id="btn-toggle" class="btn primary">▶ Старт</button>
-      <button id="btn-restart" class="btn icon" title="В начало">⟲</button>
+      <button id="btn-faster" class="btn icon" title="Faster">＋</button>
+      <button id="btn-toggle" class="btn primary">▶ Start</button>
+      <button id="btn-restart" class="btn icon" title="Back to start">⟲</button>
     </div>
   </section>
 
-  <!-- ---------- результат записи ---------- -->
+  <!-- ---------- recording result ---------- -->
   <section id="result" hidden>
     <header class="topbar">
-      <button id="btn-back" class="btn ghost icon" title="Назад">←</button>
-      <div class="brand">Запись готова</div>
+      <button id="btn-back" class="btn ghost icon" title="Back">←</button>
+      <div class="brand">Recording ready</div>
     </header>
     <main class="tp-setup">
       <video id="recorded" controls playsinline></video>
       <div class="row wrap">
-        <button id="btn-subs" class="btn primary">Сделать субтитры</button>
-        <a id="btn-save" class="btn">⬇ Скачать запись</a>
-        <button id="btn-retake" class="btn ghost">Переснять</button>
+        <button id="btn-subs" class="btn primary">Make subtitles</button>
+        <a id="btn-save" class="btn">⬇ Download recording</a>
+        <button id="btn-retake" class="btn ghost">Retake</button>
       </div>
       <div id="up-progress" class="progress" hidden><div></div></div>
     </main>

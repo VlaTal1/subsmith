@@ -1,4 +1,4 @@
-"""HTTP API и раздача фронтенда."""
+"""HTTP API and frontend serving."""
 
 from __future__ import annotations
 
@@ -30,17 +30,17 @@ FONTS = ROOT / "fonts"
 STATIC = ROOT / "static"
 DATA.mkdir(parents=True, exist_ok=True)
 
-app = FastAPI(title="Субтитры")
+app = FastAPI(title="subsmith")
 
-# ---------------------------------------------------------------- проекты
+# ---------------------------------------------------------------- projects
 
 
 def project_dir(pid: str) -> Path:
     if not re.fullmatch(r"[a-f0-9]{12}", pid):
-        raise HTTPException(404, "Проект не найден")
+        raise HTTPException(404, "Project not found")
     d = DATA / pid
     if not (d / "project.json").exists():
-        raise HTTPException(404, "Проект не найден")
+        raise HTTPException(404, "Project not found")
     return d
 
 
@@ -64,7 +64,7 @@ def probe(path: Path) -> dict:
     info = json.loads(out)
     video = next((s for s in info["streams"] if s["codec_type"] == "video"), None)
     if not video:
-        raise HTTPException(400, "В файле нет видеодорожки")
+        raise HTTPException(400, "The file has no video track")
     w, h = int(video["width"]), int(video["height"])
     rotation = 0
     for sd in video.get("side_data_list", []):
@@ -105,7 +105,7 @@ def create_project(file: UploadFile = File(...), name: str = Form("")):
         if ext in (".mp4", ".mov", ".m4v") and probe(raw)["duration"] > 0:
             raw.rename(src)
         else:
-            # webm/mkv (например, запись телесуфлёра) — перекодируем, чтобы корректно работала перемотка
+            # webm/mkv (e.g. a teleprompter recording) — re-encode so that seeking works correctly
             subprocess.run(
                 ["ffmpeg", "-y", "-v", "error", "-i", str(raw), "-c:v", "libx264", "-preset", "veryfast",
                  "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart",
@@ -116,13 +116,13 @@ def create_project(file: UploadFile = File(...), name: str = Form("")):
         meta = probe(src)
     except subprocess.CalledProcessError as e:
         shutil.rmtree(d, ignore_errors=True)
-        raise HTTPException(400, "Не удалось прочитать видео: " + (e.stderr or b"").decode(errors="ignore")[-300:])
+        raise HTTPException(400, "Could not read the video: " + (e.stderr or b"").decode(errors="ignore")[-300:])
     except Exception:
         shutil.rmtree(d, ignore_errors=True)
         raise
     p = {
         "id": pid,
-        "name": name or Path(file.filename or "Видео").stem,
+        "name": name or Path(file.filename or "Video").stem,
         "created": time.time(),
         **meta,
         "language": None,
@@ -174,7 +174,7 @@ def get_output(pid: str):
     d = project_dir(pid)
     out = d / "output.mp4"
     if not out.exists():
-        raise HTTPException(404, "Видео ещё не экспортировано")
+        raise HTTPException(404, "The video has not been exported yet")
     name = load_project(pid)["name"]
     return FileResponse(out, media_type="video/mp4", filename=f"{name}_subtitles.mp4")
 
@@ -193,7 +193,7 @@ def get_ass(pid: str, req: RenderRequest):
 def _font_info(path: Path) -> dict:
     font = TTFont(path)
     os2 = font["OS/2"]
-    # libass масштабирует шрифт так, что winAscent+winDescent == размер; в CSS размер — это em
+    # libass scales the font so that winAscent+winDescent == size; in CSS the size is the em
     return {
         "name": font["name"].getDebugName(1),
         "file": path.name,
@@ -209,7 +209,7 @@ def list_fonts():
     return FONT_LIST
 
 
-# ---------------------------------------------------------------- свои стили (библиотека, общая для всех проектов)
+# ---------------------------------------------------------------- custom styles (library shared by all projects)
 
 HEX_COLOR = re.compile(r"#[0-9A-Fa-f]{6}")
 
@@ -217,14 +217,14 @@ HEX_COLOR = re.compile(r"#[0-9A-Fa-f]{6}")
 def clean_combo(cid: str, data: dict) -> dict:
     fonts = {f["name"] for f in FONT_LIST}
     if data.get("layout") not in ("stack", "accent"):
-        raise HTTPException(400, "Неизвестная раскладка")
+        raise HTTPException(400, "Unknown layout")
     roles_in = data.get("roles") or []
     if len(roles_in) != 2:
-        raise HTTPException(400, "Нужно ровно два шрифта")
+        raise HTTPException(400, "Exactly two fonts are required")
     roles = []
     for r in roles_in:
         if r.get("font") not in fonts:
-            raise HTTPException(400, f"Нет шрифта: {r.get('font')}")
+            raise HTTPException(400, f"Font not found: {r.get('font')}")
         role = {"font": r["font"], "size": round(min(3.0, max(0.4, float(r.get("size", 1)))), 2)}
         if r.get("case") in ("upper", "lower"):
             role["case"] = r["case"]
@@ -255,7 +255,7 @@ def clean_combo(cid: str, data: dict) -> dict:
         "outline": round(min(20.0, max(0.0, float(st.get("outline", 3)))), 1),
         "lineSpacing": round(min(2.5, max(0.5, float(st.get("lineSpacing", 1)))), 2),
     }
-    name = (str(data.get("name") or "").strip() or "Мой стиль")[:40]
+    name = (str(data.get("name") or "").strip() or "My style")[:40]
     return {"id": cid, "name": name, "layout": data["layout"], "roles": roles, "style": style, "custom": True}
 
 
@@ -273,7 +273,7 @@ def list_custom_combos():
 @app.put("/api/custom-combos/{cid}")
 def put_custom_combo(cid: str, data: dict):
     if not re.fullmatch(r"custom-[a-z0-9]{4,16}", cid):
-        raise HTTPException(400, "Неверный идентификатор")
+        raise HTTPException(400, "Invalid identifier")
     combo = clean_combo(cid, data)
     items = [c for c in load_custom_combos() if c["id"] != cid]
     old = next((i for i, c in enumerate(load_custom_combos()) if c["id"] == cid), len(items))
@@ -288,7 +288,7 @@ def delete_custom_combo(cid: str):
     return {"ok": True}
 
 
-# ---------------------------------------------------------------- фоновые задачи
+# ---------------------------------------------------------------- background jobs
 
 jobs: dict[str, dict] = {}
 
@@ -320,7 +320,7 @@ def start_job(kind: str, pid: str, fn) -> str:
 @app.get("/api/jobs/{jid}")
 def get_job(jid: str):
     if jid not in jobs:
-        raise HTTPException(404, "Задача не найдена")
+        raise HTTPException(404, "Job not found")
     return jobs[jid]
 
 
@@ -335,7 +335,7 @@ class TranscribeRequest(BaseModel):
 def start_transcribe(pid: str, req: TranscribeRequest):
     p = load_project(pid)
     if not p.get("hasAudio", True):
-        raise HTTPException(400, "В видео нет звуковой дорожки")
+        raise HTTPException(400, "The video has no audio track")
     src = str(project_dir(pid) / "source.mp4")
 
     def work(progress):
@@ -358,13 +358,13 @@ def start_transcribe(pid: str, req: TranscribeRequest):
 def start_render(pid: str, req: RenderRequest):
     p = load_project(pid)
     d = project_dir(pid)
-    # «lines» и «fx» — служебная разметка от предпросмотра для этого рендера, в проект не сохраняем
+    # "lines" and "fx" are helper markup from the preview for this render; not saved to the project
     p["captions"] = [{k: v for k, v in c.items() if k not in ("lines", "fx")} for c in req.captions]
     p["style"] = req.style
     save_project(p)
 
     def work(progress):
-        progress(0.0, "Подготовка…")
+        progress(0.0, "Preparing…")
         (d / "subs.ass").write_text(build_ass(req.captions, req.style, p["width"], p["height"]), "utf-8")
         fonts_rel = os.path.relpath(FONTS, d)
         tmp = d / "output.tmp.mp4"
@@ -381,19 +381,19 @@ def start_render(pid: str, req: RenderRequest):
         for line in proc.stdout:
             if line.startswith("out_time_us=") or line.startswith("out_time_ms="):
                 try:
-                    progress(min(0.99, int(line.split("=")[1]) / 1e6 / duration), "Рендер видео…")
+                    progress(min(0.99, int(line.split("=")[1]) / 1e6 / duration), "Rendering video…")
                 except ValueError:
                     pass
         err = proc.stderr.read()
         if proc.wait() != 0:
-            raise RuntimeError("Ошибка ffmpeg: " + err[-500:])
+            raise RuntimeError("ffmpeg error: " + err[-500:])
         tmp.replace(d / "output.mp4")
         return {"url": f"/api/projects/{pid}/output"}
 
     return {"job": start_job("render", pid, work)}
 
 
-# ---------------------------------------------------------------- статика
+# ---------------------------------------------------------------- static files
 
 app.mount("/fonts", StaticFiles(directory=FONTS), name="fonts")
 app.mount("/", StaticFiles(directory=STATIC, html=True), name="static")

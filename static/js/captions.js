@@ -1,4 +1,4 @@
-// Операции над субтитрами: разбивка слов на подписи, правка текста, экспорт.
+// Subtitle operations: splitting words into captions, text editing, export.
 // caption = { start, end, words: [{ text, start, end }] }
 
 const r3 = (x) => Math.round(x * 1000) / 1000;
@@ -31,7 +31,7 @@ export function chunkWords(words, { maxWords = 4, maxChars = 22, maxGap = 0.7 } 
     cur.push(w);
   }
   flush();
-  // Держим подпись на экране чуть дольше последнего слова, но не дольше начала следующей
+  // Keep the caption on screen a bit past its last word, but not past the next caption's start
   for (let i = 0; i < caps.length; i++) {
     const next = caps[i + 1];
     const hold = Math.min(caps[i].end + 0.4, next ? next.start : Infinity);
@@ -44,8 +44,8 @@ export function captionText(cap) {
   return cap.words.map((w) => w.text).join(" ");
 }
 
-// Новый текст подписи: если число слов совпало — сохраняем пословные таймкоды,
-// иначе распределяем время пропорционально длине слов.
+// New caption text: if the word count matches, keep word timestamps;
+// otherwise distribute time proportionally to word length.
 export function retimeText(cap, text) {
   const tokens = text.split(/\s+/).filter(Boolean);
   if (!tokens.length) return { ...cap, words: [] };
@@ -64,7 +64,7 @@ export function retimeText(cap, text) {
   return { ...cap, words };
 }
 
-// Новые границы подписи: пословные тайминги растягиваются пропорционально
+// New caption bounds: word timings are stretched proportionally
 export function retimeRange(cap, start, end) {
   const os = cap.start, od = cap.end - cap.start || 1;
   const map = (x) => r3(start + ((x - os) / od) * (end - start));
@@ -81,7 +81,7 @@ export function splitCaption(cap, wordIndex) {
   ];
 }
 
-// Склейка соседних подписей. keep — чьи свойства (своя позиция и т.п.) остаются: "a" или "b"
+// Merge adjacent captions. keep — whose properties (own position etc.) are kept: "a" or "b"
 export function mergeCaptions(a, b, keep = "a") {
   return { ...(keep === "a" ? a : b), start: a.start, end: b.end, words: [...a.words, ...b.words] };
 }

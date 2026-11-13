@@ -13,7 +13,7 @@ function toast(msg, isError = false) {
   toast.t = setTimeout(() => (el.hidden = true), 4000);
 }
 
-// ------------------------------------------------------------------ настройки
+// ------------------------------------------------------------------ settings
 
 for (const k of SETTINGS) {
   const el = $(`#${k}`);
@@ -37,9 +37,9 @@ function updateInfo() {
   const text = $("#script").value;
   localStorage.setItem("tp-script", text);
   const words = text.split(/\s+/).filter(Boolean).length;
-  // ~140 слов в минуту — средний темп речи
+  // ~140 words per minute — average speaking pace
   const min = words / 140;
-  $("#script-info").textContent = words ? `${words} слов · примерно ${Math.max(1, Math.round(min * 60))} с чтения` : "";
+  $("#script-info").textContent = words ? `${words} words · about ${Math.max(1, Math.round(min * 60))} s to read` : "";
 }
 $("#script").oninput = updateInfo;
 updateInfo();
@@ -49,7 +49,7 @@ async function listCameras() {
     const devices = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
     const sel = $("#cam-select");
     sel.innerHTML = "";
-    devices.forEach((d, i) => sel.add(new Option(d.label || `Камера ${i + 1}`, d.deviceId)));
+    devices.forEach((d, i) => sel.add(new Option(d.label || `Camera ${i + 1}`, d.deviceId)));
     if (store.camId && devices.some((d) => d.deviceId === store.camId)) sel.value = store.camId;
   } catch {}
 }
@@ -59,7 +59,7 @@ $("#cam-select").onchange = () => {
   localStorage.setItem("tp-settings", JSON.stringify({ ...JSON.parse(localStorage.getItem("tp-settings")), camId: store.camId }));
 };
 
-// ------------------------------------------------------------------ суфлёр
+// ------------------------------------------------------------------ prompter
 
 const tp = { pos: 0, playing: false, last: 0, stream: null, recorder: null, chunks: [], recStart: 0, recElapsed: 0, canvasLoop: 0, blob: null };
 
@@ -85,7 +85,7 @@ async function startCamera() {
   await new Promise((r) => (cam.onloadedmetadata = r));
   if (!$("#cam-select").options.length || !$("#cam-select").options[0].label) listCameras();
 
-  // Пишем через canvas с обрезкой по центру — так запись получается в нужном формате (9:16 / 16:9)
+  // Record via a center-cropped canvas so the output has the right aspect ratio (9:16 / 16:9)
   const vw = cam.videoWidth, vh = cam.videoHeight;
   const target = portrait ? 9 / 16 : 16 / 9;
   let cw = vw, ch = vh;
@@ -118,7 +118,7 @@ function stopCamera() {
 
 async function start() {
   const text = $("#script").value.trim();
-  if (!text) return toast("Добавьте текст сценария", true);
+  if (!text) return toast("Add the script text", true);
   const t = $("#text");
   t.textContent = text;
   t.style.fontSize = `${val("size")}px`;
@@ -135,7 +135,7 @@ async function start() {
     try {
       await startCamera();
     } catch (e) {
-      toast("Нет доступа к камере: " + e.message, true);
+      toast("No camera access: " + e.message, true);
       $("#cam").hidden = $("#shade").hidden = true;
     }
   }
@@ -182,7 +182,7 @@ async function togglePlay() {
 
 function setPlayButton() {
   const rec = !!tp.stream;
-  $("#btn-toggle").textContent = tp.playing ? "❚❚ Пауза" : rec && !tp.recorder ? "● Запись" : "▶ Старт";
+  $("#btn-toggle").textContent = tp.playing ? "❚❚ Pause" : rec && !tp.recorder ? "● Record" : "▶ Start";
 }
 
 function applyPos() {
@@ -229,7 +229,7 @@ async function exit() {
     $("#recorded").src = url;
     const ext = tp.blob.type.includes("mp4") ? "mp4" : "webm";
     $("#btn-save").href = url;
-    $("#btn-save").download = `запись-${new Date().toISOString().slice(0, 16).replace(/[T:]/g, "-")}.${ext}`;
+    $("#btn-save").download = `recording-${new Date().toISOString().slice(0, 16).replace(/[T:]/g, "-")}.${ext}`;
     show("result");
   } else {
     stopCamera();
@@ -250,7 +250,7 @@ $("#scroller").addEventListener("wheel", (e) => {
   applyPos();
 }, { passive: false });
 
-// Перелистывание пальцем
+// Swipe scrolling
 let touchY = null;
 $("#scroller").addEventListener("touchstart", (e) => (touchY = e.touches[0].clientY), { passive: true });
 $("#scroller").addEventListener("touchmove", (e) => {
@@ -267,7 +267,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") exit();
 });
 
-// ------------------------------------------------------------------ результат
+// ------------------------------------------------------------------ result
 
 $("#btn-retake").onclick = $("#btn-back").onclick = () => show("setup");
 
@@ -280,7 +280,7 @@ $("#btn-subs").onclick = () => {
   const fd = new FormData();
   const ext = tp.blob.type.includes("mp4") ? "mp4" : "webm";
   fd.append("file", tp.blob, `recording.${ext}`);
-  fd.append("name", `Запись ${new Date().toLocaleString("ru", { dateStyle: "short", timeStyle: "short" })}`);
+  fd.append("name", `Recording ${new Date().toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}`);
   const xhr = new XMLHttpRequest();
   xhr.open("POST", "/api/projects");
   xhr.upload.onprogress = (e) => {
@@ -295,10 +295,10 @@ $("#btn-subs").onclick = () => {
       return toast(msg, true);
     }
     const p = JSON.parse(xhr.responseText);
-    // Сценарий — подсказка для распознавания: имена и термины распознаются точнее
+    // The script is a recognition hint: names and terms are recognized more accurately
     sessionStorage.setItem(`prompt:${p.id}`, $("#script").value.slice(0, 800));
     location.href = `/#/p/${p.id}?auto=1`;
   };
-  xhr.onerror = () => { btn.disabled = false; bar.hidden = true; toast("Ошибка загрузки", true); };
+  xhr.onerror = () => { btn.disabled = false; bar.hidden = true; toast("Upload failed", true); };
   xhr.send(fd);
 };

@@ -1,8 +1,8 @@
-"""Эффекты-частицы вокруг слова (сердечки, конфетти, огоньки, …) и маркер/подчёркивание.
+"""Particle effects around a word (hearts, confetti, sparks, …) and marker/underline.
 
-Положение и рамку слова присылает предпросмотр; случайные параметры — из mulberry32
-с тем же зерном, что и в static/js/overlay.js (particleSlots/particleCycle). Менять синхронно:
-порядок вызовов rnd() важен.
+The word position and box come from the preview; random parameters come from mulberry32
+with the same seed as in static/js/overlay.js (particleSlots/particleCycle). Keep them in sync:
+the order of rnd() calls matters.
 """
 
 from __future__ import annotations
@@ -14,11 +14,11 @@ from .anim import mulberry32
 PARTICLES = ("hearts", "confetti", "fireflies", "bubbles", "snow", "burst")
 BARS = ("marker", "underline")
 CONFETTI = ["#FF3EA5", "#FFE45C", "#22D3EE", "#A3E635", "#A78BFA", "#FB923C"]
-WIPE = 0.25  # маркер/подчёркивание прорисовываются за 0,25 с
+WIPE = 0.25  # marker/underline is drawn in over 0.25 s
 
 
 def _polygon(points):
-    """Многоугольник, отцентрованный по своей рамке и вписанный в [-1, 1]."""
+    """Polygon centered on its bounding box and fitted into [-1, 1]."""
     xs, ys = [p[0] for p in points], [p[1] for p in points]
     cx, cy = (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2
     k = max(max(xs) - min(xs), max(ys) - min(ys)) / 2
@@ -55,7 +55,7 @@ def particle_slots(kind: str, seed: int, strength: float) -> list[dict]:
 
 
 def particle_cycle(kind: str, seed: int, i: int, n: int, count: int) -> dict:
-    """Параметры i-й частицы в n-м цикле. x, y — доли рамки слова; size — доля высоты слова."""
+    """Parameters of the i-th particle in the n-th cycle. x, y — fractions of the word box; size — fraction of the word height."""
     rnd = mulberry32(seed + i * 7919 + n * 104729)
     p = {"shape": "dot", "color": None, "rot0": 0.0, "rot1": 0.0, "alpha": (0, 1, 0), "scale": (1, 1, 1), "blur": 0.5, "ring": False}
     if kind == "hearts":
@@ -90,7 +90,7 @@ def particle_cycle(kind: str, seed: int, i: int, n: int, count: int) -> dict:
 
 
 def lerp3(keys, u: float) -> float:
-    """Значение по трём ключам (начало, середина, конец жизни частицы) — линейно, как \\t в ASS."""
+    """Value from three keys (start, middle, end of the particle's life) — linear, like \\t in ASS."""
     a, b, c = keys
     return a + (b - a) * (u / 0.5) if u < 0.5 else b + (c - b) * ((u - 0.5) / 0.5)
 
@@ -141,7 +141,7 @@ def particle_events(cap: dict, j: int, box: list, appear: float, end: float, fx:
             else:
                 look = f"\\bord0\\c{c}"
                 al = lambda x: f"\\1a&H{x}&"
-            # \move задаётся на всю жизнь частицы — если её обрезал конец подписи, укорачиваем путь
+            # \move spans the particle's whole life — if the caption end cuts it short, shorten the path
             u_end = (t1 - t0) / L
             ex, ey = cx0 + (cx1 - cx0) * u_end, cy0 + (cy1 - cy0) * u_end
             tags = (

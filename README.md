@@ -2,33 +2,33 @@
 
 > Forge your subtitles.
 
-Веб-приложение для автоматических субтитров в видео (в духе Captions / «Субтитры и телесуфлёр»):
+A self-hosted web app for automatic video subtitles, in the spirit of Captions-style mobile apps:
 
-- **Распознавание речи** — Whisper (faster-whisper) с пословными таймкодами, автоопределение языка (ru, uk, en и др.).
-- **Редактор** — правка текста, разбивка/объединение подписей, таймлайн с перетаскиванием границ, поиск и замена, сдвиг таймингов, отмена (Ctrl+Z).
-- **Стили** — подсветка активного слова, плашка на слове, караоке, по одному слову, классика, на подложке; 9 шрифтов с кириллицей, цвета, обводка, тень, положение, анимация. Предпросмотр в браузере совпадает с итоговым видео.
-- **Экспорт** — MP4 с вшитыми субтитрами (ffmpeg + libass), а также SRT / VTT / ASS / TXT.
-- **Телесуфлёр** — прокрутка сценария, скорость, зеркальный режим, запись с камеры в 9:16 или 16:9; запись сразу отправляется в редактор, а сценарий используется как подсказка для распознавания.
+- **Speech recognition** — Whisper (faster-whisper) with word-level timestamps and automatic language detection (en, uk, ru and more), plus Vosk for Ukrainian.
+- **Editor** — edit text, split and merge captions, drag caption boundaries on the timeline, find and replace, shift all timings, undo (Ctrl+Z).
+- **Styles** — active word highlight, word box, karaoke, one word at a time, classic, boxed; font-mix combo styles with effects (glow, sparkles, hearts, confetti…) and animations; Cyrillic-ready fonts, colors, outline, shadow, position. The browser preview matches the final video.
+- **Export** — MP4 with burned-in subtitles (ffmpeg + libass), plus SRT / VTT / ASS / TXT.
+- **Teleprompter** — scrolling script, adjustable speed, mirror mode, camera recording in 9:16 or 16:9. The recording goes straight into the editor, and the script is used as a recognition hint.
 
-## Запуск
+## Getting started
 
-Нужны Python 3.10+ и ffmpeg (с libass и libx264).
+Requires Python 3.10+ and ffmpeg (built with libass and libx264).
 
 ```bash
-uv venv --python 3.12 .venv            # или: python3 -m venv .venv
+uv venv --python 3.12 .venv            # or: python3 -m venv .venv
 uv pip install --python .venv -r requirements.txt
 ./run.sh                                # http://localhost:8000
 ```
 
-При первом распознавании скачивается модель Whisper (small ≈ 500 МБ). На CPU «Сбалансировано» обрабатывает минуту видео примерно за минуту; при наличии NVIDIA GPU используется автоматически.
+The speech model is downloaded on first use (Whisper small ≈ 500 MB, Vosk Ukrainian ≈ 370 MB). On CPU, the "balanced" model transcribes one minute of video in roughly one minute; an NVIDIA GPU is used automatically when available.
 
-Камера в телесуфлёре работает только на `localhost` или по HTTPS (ограничение браузеров).
+The teleprompter camera only works on `localhost` or over HTTPS (a browser restriction). To use it from a phone on the same network, run `./run.sh --https` — it generates a self-signed certificate and serves on port 8443.
 
-## Устройство
+## Project layout
 
-- `app/server.py` — API (проекты, фоновые задачи распознавания и рендера), раздача фронтенда.
-- `app/transcribe.py` — распознавание речи.
-- `app/ass.py` — генерация ASS-субтитров для каждого стиля.
-- `static/` — фронтенд без сборки: `js/overlay.js` (живой предпросмотр), `js/captions.js` (логика подписей), `js/app.js` (редактор), `js/teleprompter.js`.
-- `fonts/` — шрифты, общие для предпросмотра и рендера.
-- `data/projects/<id>/` — исходное видео, `project.json`, результат.
+- `app/server.py` — API (projects, background transcription and render jobs), frontend serving.
+- `app/transcribe.py`, `app/vosk_stt.py` — speech recognition (Whisper, Vosk).
+- `app/ass.py` — ASS subtitle generation for every style; `app/anim.py`, `app/particles.py` — animations and particle effects.
+- `static/` — build-free frontend: `js/overlay.js` (live preview), `js/captions.js` (caption logic), `js/app.js` (editor), `js/teleprompter.js`.
+- `fonts/` — fonts shared by the preview and the renderer.
+- `data/projects/<id>/` — source video, `project.json`, rendered output.

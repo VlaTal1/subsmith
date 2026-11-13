@@ -1,5 +1,5 @@
-// Живой предпросмотр субтитров поверх видео. Повторяет логику app/ass.py,
-// чтобы в браузере было видно то же, что получится после экспорта.
+// Live subtitle preview over the video. Mirrors the logic of app/ass.py
+// so the browser shows exactly what the export will produce.
 
 export const DEFAULT_STYLE = {
   preset: "highlight",
@@ -25,17 +25,17 @@ export const DEFAULT_STYLE = {
 };
 
 export const PRESETS = [
-  { id: "highlight", name: "Подсветка слова", sample: "Цвет активного слова",
+  { id: "highlight", name: "Word highlight", sample: "Active word color",
     style: { preset: "highlight", uppercase: true, highlightColor: "#FFE600", wordScale: 1.12, animation: "pop", outline: 6 } },
-  { id: "wordbox", name: "Плашка на слове", sample: "Фон под активным словом",
+  { id: "wordbox", name: "Word box", sample: "Box behind active word",
     style: { preset: "wordbox", uppercase: true, highlightColor: "#8B5CF6", wordScale: 1.0, animation: "pop" } },
-  { id: "karaoke", name: "Караоке", sample: "Плавная заливка",
+  { id: "karaoke", name: "Karaoke", sample: "Smooth fill",
     style: { preset: "karaoke", uppercase: true, highlightColor: "#22D3EE", animation: "none", outline: 6 } },
-  { id: "pop", name: "По одному слову", sample: "Крупно, по слову",
+  { id: "pop", name: "One word", sample: "Big, word by word",
     style: { preset: "pop", uppercase: true, animation: "pop", outline: 8 } },
-  { id: "classic", name: "Классика", sample: "Белый с обводкой",
+  { id: "classic", name: "Classic", sample: "White with outline",
     style: { preset: "classic", uppercase: false, outline: 5, animation: "none" } },
-  { id: "box", name: "На подложке", sample: "Текст на плашке",
+  { id: "box", name: "Boxed", sample: "Text on a box",
     style: { preset: "box", uppercase: false, boxColor: "#000000", boxOpacity: 0.65, animation: "fade" } },
 ];
 
@@ -51,7 +51,7 @@ export function hexToRgba(hex, a) {
   return `rgba(${r},${g},${b},${a})`;
 }
 
-// Обводка через кольцо text-shadow — одинаково выглядит во всех браузерах.
+// Outline via a ring of text-shadows — looks the same in every browser.
 function outlineShadow(px, color, shadowPx, shadowColor) {
   const parts = [];
   if (px > 0.2) {
@@ -66,7 +66,7 @@ function outlineShadow(px, color, shadowPx, shadowColor) {
 }
 
 export function findCaption(captions, t) {
-  // captions отсортированы по времени — бинарный поиск
+  // captions are sorted by time — binary search
   let lo = 0, hi = captions.length - 1;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
@@ -98,7 +98,7 @@ export class SubtitleOverlay {
     for (const f of list) this.fonts[f.name] = f;
   }
 
-  // Положение блока: у подписи может быть своя позиция (cap.pos), иначе — из стиля
+  // Block position: a caption may have its own position (cap.pos), otherwise from the style
   place(cap) {
     const s = this.style;
     const pos = cap.pos || { x: s.x, y: s.position };
@@ -149,7 +149,7 @@ export class SubtitleOverlay {
       b.el.style.opacity = t < b.appear ? 0 : b.alpha;
       b.el.style.transform = `scaleX(${Math.max(0, Math.min(1, (t - b.appear) / 0.25))})`;
     }
-    // Появление слов (0,18 с) — по времени видео, а не по часам браузера: на паузе кадр как в рендере
+    // Word fade-in (0.18 s) follows video time, not the browser clock: when paused the frame matches the render
     for (const f of this.fades || []) {
       f.span.style.opacity = t < f.appear ? 0 : Math.min(1, (t - f.appear) / 0.18) * f.opacity;
     }
@@ -171,7 +171,7 @@ export class SubtitleOverlay {
     }
   }
 
-  // Звёзды-блёстки вокруг слов; положение — доли рамки слова (как в app/ass.py)
+  // Sparkle stars around words; position is a fraction of the word box (as in app/ass.py)
   placeSparkles(cap, list) {
     const layerRect = this.layer.getBoundingClientRect();
     const blockRect = this.block.getBoundingClientRect();
@@ -281,7 +281,7 @@ export class SubtitleOverlay {
         const phase = (t - st.start) % st.period;
         if (phase < d) {
           const p = phase / d;
-          v = p < 0.5 ? p * 2 : (1 - p) * 2; // вспыхнуть и погаснуть
+          v = p < 0.5 ? p * 2 : (1 - p) * 2; // flash and fade
         }
       }
       st.el.style.opacity = v;
@@ -313,8 +313,8 @@ export class SubtitleOverlay {
     text.className = "sub-text";
     text.style.fontFamily = `"sub-${s.font}", sans-serif`;
     text.style.fontSize = `${px * fontInfo.cssScale}px`;
-    // Интервал: line-height ×f, а половинный интерлиньяж под последней строкой убираем —
-    // в рендере низ последней строки стоит ровно на отступе
+    // Spacing: line-height ×f, minus the half-leading under the last line —
+    // in the render the bottom of the last line sits exactly on the margin
     const f = s.preset === "box" || s.preset === "pop" ? 1 : s.lineSpacing ?? 1;
     text.style.lineHeight = `${px * f}px`;
     text.style.marginBottom = `${(-(f - 1) * px) / 2}px`;
@@ -357,7 +357,7 @@ export class SubtitleOverlay {
         this.fades.push({ span, appear: i === 0 ? cap.start : w.start, opacity: 1 });
       }
       if (s.preset === "karaoke") {
-        // Сверху — копия слова цветом заливки, открываемая слева направо
+        // On top: a copy of the word in the fill color, revealed left to right
         span.dataset.i = i;
         span.classList.add("k");
         const fill = document.createElement("span");
@@ -379,7 +379,7 @@ export class SubtitleOverlay {
     else if (anim === "fade") text.classList.add("anim-fade");
   }
 
-  // Комбинированные стили: строки/слова разными шрифтами, слова появляются по мере речи
+  // Combo styles: lines/words in different fonts, words appear as they are spoken
   renderCombo(cap, wi, newCaption) {
     const s = this.style;
     const sc = this.scale;
@@ -424,7 +424,7 @@ export class SubtitleOverlay {
       const anim = role.anim?.type && role.anim.type !== "none" ? role.anim : null;
       if (BOX_FX.has(role.fx?.type) || anim) sparkle.push([j, span, role]);
       if (anim) {
-        // анимированное слово двигается трансформацией, не задевая раскладку строки
+        // the animated word moves via transform without affecting the line layout
         span.style.display = "inline-block";
         span.style.transformOrigin = "50% 50%";
         this.anims.push({
@@ -456,8 +456,8 @@ export class SubtitleOverlay {
     else if (newCaption && s.animation === "fade") text.classList.add("anim-fade");
   }
 
-  // Перенос строк точно как в libass (wrap_lines_smart): сначала жадно, затем
-  // перенос сдвигается на слово назад, пока это уменьшает разницу длин соседних строк.
+  // Line wrapping exactly like libass (wrap_lines_smart): greedy first, then the
+  // break moves back one word while that reduces the length difference of adjacent lines.
   wrapLines(text) {
     const maxW = this.block.clientWidth;
     const segments = text.classList.contains("combo") ? [...text.querySelectorAll(".sub-line")] : [text];
@@ -477,7 +477,7 @@ export class SubtitleOverlay {
       for (const start of libassWrap(ws, gs, maxW)) {
         if (start === 0) continue;
         const gap = gapNodes[start - 1];
-        if (gap) gap.remove(); // пробел в конце строки libass отбрасывает
+        if (gap) gap.remove(); // libass drops trailing spaces at line end
         seg.insertBefore(document.createElement("br"), words[start]);
         starts.add(+words[start].dataset.wi);
       }
@@ -485,7 +485,7 @@ export class SubtitleOverlay {
     this.lastStarts = [...starts].sort((a, b) => a - b);
   }
 
-  // Где начинаются строки подписи в состоянии «активно слово wi» — для экспорта с интервалом
+  // Where caption lines start while word wi is active — for export with line spacing
   layoutStarts(cap, wi) {
     this.render(cap, wi, false);
     return this.lastStarts;
@@ -503,7 +503,7 @@ export class SubtitleOverlay {
   }
 }
 
-// ---- раскладка комбинированных стилей (та же логика, что в app/ass.py)
+// ---- combo style layout (same logic as in app/ass.py)
 
 export function applyCase(text, kase, uppercase) {
   if (kase === "upper" || (!kase && uppercase)) return text.toUpperCase();
@@ -520,7 +520,7 @@ export function setStopwords(data) {
 const letters = (t) => (t.toLowerCase().match(/\p{L}/gu) || []).join("");
 export const isStopword = (t) => STOP.has(letters(t));
 
-// Слова-акценты: отмеченные вручную, иначе самое длинное не служебное слово
+// Accent words: those marked manually, otherwise the longest non-stopword
 export function emphasisIndices(words) {
   const marked = words.map((w, i) => (w.em ? i : -1)).filter((i) => i >= 0);
   if (marked.length) return new Set(marked);
@@ -537,7 +537,7 @@ function* combinations(from, to, k, start = from, acc = []) {
   for (let i = start; i < to; i++) yield* combinations(from, to, k - 1, i + 1, [...acc, i]);
 }
 
-// Где начинать строки — та же оценка, что auto_line_starts в app/ass.py
+// Where to start lines — same scoring as auto_line_starts in app/ass.py
 export function autoLineStarts(words, maxLines) {
   const n = words.length;
   if (n <= 1 || maxLines <= 1) return [0];
@@ -580,7 +580,7 @@ export function lineStarts(combo, words) {
   return manual.length ? [0, ...manual] : autoLineStarts(words, combo.roles.length);
 }
 
-// Для каждого слова: [роль-оформление, начинается ли с него новая строка, номер роли]
+// For each word: [styling role, whether it starts a new line, role index]
 export function comboLayout(combo, words) {
   const roles = combo.roles;
   if (combo.layout === "accent") {
@@ -595,15 +595,15 @@ export function comboLayout(combo, words) {
   });
 }
 
-// Блок текста: центр по горизонтали в x%, низ в y% от низа; у края кадра сужается
-// (та же формула, что block_margins в app/ass.py)
+// Text block: horizontal center at x%, bottom at y% from the bottom; narrows near the frame edge
+// (same formula as block_margins in app/ass.py)
 export function blockBox(x, y, maxWidth) {
   x = Math.max(0, Math.min(100, x));
   const half = Math.min(maxWidth / 2, x, 100 - x);
   return { left: x - half, right: 100 - x - half, bottom: y };
 }
 
-// Номера слов, с которых начинаются строки. ws — ширины слов, gs — ширины пробелов после них.
+// Indices of words that start lines. ws — word widths, gs — widths of the spaces after them.
 export function libassWrap(ws, gs, maxW) {
   const n = ws.length;
   const W = (a, z) => {
@@ -621,7 +621,7 @@ export function libassWrap(ws, gs, maxW) {
     changed = false;
     for (let k = 1; k < L.length - 1; k++) {
       const s1 = L[k - 1], s2 = L[k], s3 = L[k + 1], w = s2 - 1;
-      if (w === s1) continue; // в первой строке одно слово — двигать нечего
+      if (w === s1) continue; // one word on the first line — nothing to move
       const d = Math.abs(W(s1, s2) - W(s2, s3));
       const dNew = Math.abs(W(s1, w) - W(w, s3));
       if (dNew < d) { L[k] = w; changed = true; }
@@ -630,15 +630,15 @@ export function libassWrap(ws, gs, maxW) {
   return L.slice(0, -1);
 }
 
-// ---- эффекты второго шрифта (та же логика, что fx_tags / sparkle_* в app/ass.py)
+// ---- second-font effects (same logic as fx_tags / sparkle_* in app/ass.py)
 
 export function fxTextShadow(fx, unit) {
   if (!fx || !fx.type || fx.type === "none" || fx.type === "sparkle") return "";
   const c = fx.color || "#FFFFFF";
   const st = fx.strength ?? 5;
   if (fx.type === "glow") {
-    // В рендере: контур толщиной r/2 цветом эффекта (75%), размытый на 0.6r — повторяем
-    // кольцом размытых теней вокруг буквы
+    // In the render: an r/2-wide outline in the effect color (75%), blurred by 0.6r — reproduced
+    // with a ring of blurred shadows around the glyph
     const r = (4 + st * 3) * unit;
     const ring = [];
     for (let i = 0; i < 8; i++) {
@@ -681,7 +681,7 @@ export function sparkleStars(start, j, strength) {
   return stars;
 }
 
-// ---- анимации второго шрифта (та же математика, что app/anim.py)
+// ---- second-font animations (same math as app/anim.py)
 
 const ANIM_STEP = { shake: 0.07, flicker: 0.06 };
 
@@ -731,7 +731,7 @@ export function animState(anim, tau, seed) {
   return st;
 }
 
-// ---- частицы вокруг слова (та же логика, что app/particles.py; порядок вызовов rnd() важен)
+// ---- particles around a word (same logic as app/particles.py; the order of rnd() calls matters)
 
 export const PARTICLES = ["hearts", "confetti", "fireflies", "bubbles", "snow", "burst"];
 export const BARS = ["marker", "underline"];

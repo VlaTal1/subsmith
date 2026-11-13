@@ -9,7 +9,7 @@ import {
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
-// ------------------------------------------------------------------ общее
+// ------------------------------------------------------------------ common
 
 async function api(path, opts = {}) {
   const res = await fetch(path, {
@@ -69,7 +69,7 @@ async function loadFonts() {
   );
 }
 
-// ------------------------------------------------------------------ роутинг
+// ------------------------------------------------------------------ routing
 
 function route() {
   const m = location.hash.match(/^#\/p\/([a-f0-9]{12})/);
@@ -80,7 +80,7 @@ function route() {
 }
 window.addEventListener("hashchange", route);
 
-// ------------------------------------------------------------------ главная
+// ------------------------------------------------------------------ home
 
 async function showHome() {
   const list = await api("/api/projects");
@@ -97,13 +97,13 @@ async function showHome() {
       </div>
       <div class="p-info">
         <div class="p-name"></div>
-        <div class="small muted">${fmtTime(p.duration, false)} · ${p.width}×${p.height}${p.hasOutput ? " · ✓ экспортировано" : ""}</div>
+        <div class="small muted">${fmtTime(p.duration, false)} · ${p.width}×${p.height}${p.hasOutput ? " · ✓ exported" : ""}</div>
       </div>
-      <button class="p-del btn ghost icon small" title="Удалить">✕</button>`;
+      <button class="p-del btn ghost icon small" title="Delete">✕</button>`;
     $(".p-name", card).textContent = p.name;
     $(".p-del", card).onclick = async (e) => {
       e.preventDefault();
-      if (!confirm(`Удалить проект «${p.name}»?`)) return;
+      if (!confirm(`Delete project "${p.name}"?`)) return;
       await api(`/api/projects/${p.id}`, { method: "DELETE" });
       showHome();
     };
@@ -130,7 +130,7 @@ function uploadFile(file) {
     }
     location.hash = `#/p/${JSON.parse(xhr.responseText).id}?auto=1`;
   };
-  xhr.onerror = () => { bar.hidden = true; toast("Ошибка загрузки", true); };
+  xhr.onerror = () => { bar.hidden = true; toast("Upload failed", true); };
   xhr.send(fd);
 }
 
@@ -145,7 +145,7 @@ dz.ondrop = (e) => {
   if (f) uploadFile(f);
 };
 
-// ------------------------------------------------------------------ редактор: состояние
+// ------------------------------------------------------------------ editor: state
 
 const video = $("#video");
 const overlay = new SubtitleOverlay($("#sub-layer"));
@@ -189,7 +189,7 @@ async function openEditor(id) {
 
 function closeEditor() {
   if (!ed.project) return;
-  if (ce.draft) cancelComboEditor(); // несохранённый свой стиль не оставляем в проекте
+  if (ce.draft) cancelComboEditor(); // don't leave an unsaved custom style in the project
   flushSave();
   video.pause();
   video.removeAttribute("src");
@@ -223,7 +223,7 @@ function redo() {
 }
 
 function scheduleSave() {
-  $("#save-status").textContent = "Не сохранено";
+  $("#save-status").textContent = "Unsaved";
   clearTimeout(ed.saveTimer);
   ed.saveTimer = setTimeout(flushSave, 800);
 }
@@ -236,15 +236,15 @@ async function flushSave() {
     await api(`/api/projects/${ed.project.id}`, {
       method: "PUT",
       body: {
-        name: $("#project-name").value.trim() || "Без названия",
+        name: $("#project-name").value.trim() || "Untitled",
         captions: ed.captions,
         style: ed.style,
         chunk: chunkOpts(),
       },
     });
-    $("#save-status").textContent = "Сохранено";
+    $("#save-status").textContent = "Saved";
   } catch (e) {
-    $("#save-status").textContent = "Ошибка сохранения";
+    $("#save-status").textContent = "Save failed";
   }
 }
 window.addEventListener("beforeunload", flushSave);
@@ -264,7 +264,7 @@ function renderAll() {
   $("#btn-redo").disabled = !ed.future.length;
 }
 
-// ------------------------------------------------------------------ плеер и превью
+// ------------------------------------------------------------------ player and preview
 
 function layoutFrame() {
   const p = ed.project;
@@ -329,12 +329,12 @@ video.onplay = video.onpause = () => {
 video.onloadedmetadata = layoutFrame;
 $("#btn-play").onclick = togglePlay;
 
-// Размер превью на телефоне: крупный по умолчанию, компактный — по кнопке или пока правится текст
+// Preview size on phones: large by default, compact via the button or while editing text
 let compactPinned = localStorage.getItem("compact-preview") === "1";
 function setCompact(on) {
   $("#view-editor").classList.toggle("compact", on);
   $("#btn-size").textContent = on ? "⤢" : "⤡";
-  setTimeout(layoutFrame, 220); // после анимации высоты
+  setTimeout(layoutFrame, 220); // after the height animation
 }
 setCompact(compactPinned);
 $("#btn-size").onclick = () => {
@@ -353,11 +353,11 @@ function seek(t) {
   video.currentTime = Math.max(0, Math.min(t, video.duration || ed.project.duration));
 }
 
-// ------------------------------------------------------------------ перетаскивание текста по видео
+// ------------------------------------------------------------------ dragging text over the video
 
 let moveOne = localStorage.getItem("move-one") === "1";
 function syncMoveMode() {
-  $("#btn-move-mode").textContent = moveOne ? "✥ Эта подпись" : "✥ Все подписи";
+  $("#btn-move-mode").textContent = moveOne ? "✥ This caption" : "✥ All captions";
   $("#btn-move-mode").classList.toggle("on", moveOne);
 }
 syncMoveMode();
@@ -365,7 +365,7 @@ $("#btn-move-mode").onclick = () => {
   moveOne = !moveOne;
   localStorage.setItem("move-one", moveOne ? "1" : "0");
   syncMoveMode();
-  toast(moveOne ? "Перетаскивание двигает только текущую подпись" : "Перетаскивание двигает все подписи");
+  toast(moveOne ? "Dragging moves only the current caption" : "Dragging moves all captions");
 };
 
 $("#sub-layer").addEventListener("pointerdown", (e) => {
@@ -375,7 +375,7 @@ $("#sub-layer").addEventListener("pointerdown", (e) => {
   e.preventDefault();
   const frame = $("#frame").getBoundingClientRect();
   const cap = ed.captions[idx];
-  // Подпись со своей позицией двигается отдельно всегда; иначе — по режиму кнопки
+  // A caption with its own position always moves on its own; otherwise per the toggle mode
   const own = moveOne || !!cap.pos;
   const start = own && cap.pos ? { ...cap.pos } : { x: ed.style.x, y: ed.style.position };
   const blockH = (block.offsetHeight / frame.height) * 100;
@@ -412,7 +412,7 @@ $("#sub-layer").addEventListener("pointerdown", (e) => {
     block.classList.remove("dragging");
     $("#snap-guide").hidden = true;
     if (!moved) return;
-    // Щелчок после перетаскивания не должен ставить видео на паузу/воспроизведение
+    // A click after dragging must not toggle play/pause
     $("#frame").addEventListener("click", (ev) => ev.stopPropagation(), { capture: true, once: true });
     if (own) {
       ed.past.push(before);
@@ -424,7 +424,7 @@ $("#sub-layer").addEventListener("pointerdown", (e) => {
   };
 });
 
-// ------------------------------------------------------------------ таймлайн
+// ------------------------------------------------------------------ timeline
 
 function renderTimeline() {
   const p = ed.project;
@@ -517,7 +517,7 @@ $("#zoom").oninput = (e) => {
   tl.scrollLeft = center * ed.pxPerSec - tl.clientWidth / 2;
 };
 
-// ------------------------------------------------------------------ список подписей
+// ------------------------------------------------------------------ caption list
 
 function select(i, scroll = false) {
   ed.selected = i;
@@ -528,7 +528,7 @@ function select(i, scroll = false) {
 }
 
 function autoGrow(ta) {
-  if (!ta.offsetParent) return; // вкладка скрыта — высоту посчитаем при её открытии
+  if (!ta.offsetParent) return; // tab is hidden — height will be computed when it opens
   ta.style.height = "auto";
   ta.style.height = `${ta.scrollHeight}px`;
 }
@@ -543,16 +543,16 @@ function renderCaptionList() {
     row.dataset.i = i;
     row.innerHTML = `
       <div class="cap-head">
-        <input class="t-start" value="${fmtTime(c.start)}" title="Начало">
+        <input class="t-start" value="${fmtTime(c.start)}" title="Start">
         <span class="muted">→</span>
-        <input class="t-end" value="${fmtTime(c.end)}" title="Конец">
+        <input class="t-end" value="${fmtTime(c.end)}" title="End">
         <div class="spacer"></div>
-        ${c.pos ? '<button class="btn ghost icon small pos-reset" data-act="unpos" title="Своя позиция — вернуть общую">⌖</button>' : ""}
-        <button class="btn ghost icon small" data-act="split" title="Разделить по курсору">✂</button>
-        <button class="btn ghost icon small" data-act="toPrev" title="Перенести текст в конец предыдущей подписи (Backspace в начале текста)" ${i === 0 ? "disabled" : ""}>⤒</button>
-        <button class="btn ghost icon small" data-act="toNext" title="Перенести текст в начало следующей подписи" ${i === ed.captions.length - 1 ? "disabled" : ""}>⤓</button>
-        <button class="btn ghost icon small" data-act="insert" title="Вставить пустую после">＋</button>
-        <button class="btn ghost icon small" data-act="delete" title="Удалить">✕</button>
+        ${c.pos ? '<button class="btn ghost icon small pos-reset" data-act="unpos" title="Custom position — reset to shared">⌖</button>' : ""}
+        <button class="btn ghost icon small" data-act="split" title="Split at cursor">✂</button>
+        <button class="btn ghost icon small" data-act="toPrev" title="Move text to the end of the previous caption (Backspace at the start)" ${i === 0 ? "disabled" : ""}>⤒</button>
+        <button class="btn ghost icon small" data-act="toNext" title="Move text to the start of the next caption" ${i === ed.captions.length - 1 ? "disabled" : ""}>⤓</button>
+        <button class="btn ghost icon small" data-act="insert" title="Insert empty caption after">＋</button>
+        <button class="btn ghost icon small" data-act="delete" title="Delete">✕</button>
       </div>
       <textarea rows="1" spellcheck="true"></textarea>
       <div class="chips"></div>`;
@@ -569,7 +569,7 @@ function renderCaptionList() {
       autoGrow(ta);
       const caps = ed.captions.slice();
       caps[i] = retimeText(c, ta.value);
-      // Без полной перерисовки, чтобы не сбить курсор; в историю — одна запись на правку
+      // No full re-render so the cursor stays put; one history entry per edit
       if (!editing) {
         ed.past.push(JSON.stringify(ed.captions));
         ed.future = [];
@@ -583,16 +583,16 @@ function renderCaptionList() {
       scheduleSave();
     };
     ta.onblur = () => {
-      // Стёрли весь текст — удаляем подпись. Chrome шлёт blur и при удалении поля из DOM
-      // во время перерисовки списка — такие события пропускаем.
+      // All text erased — delete the caption. Chrome also fires blur when the field is removed
+      // from the DOM during a list re-render — such events are skipped.
       if (!row.isConnected) return;
       const cur = ed.captions[i];
       if (cur && !cur.words.length) commit(ed.captions.filter((_, j) => j !== i));
     };
     ta.onkeydown = (e) => {
       const collapsed = ta.selectionStart === ta.selectionEnd;
-      // Как в текстовом редакторе: Backspace в начале — склеить с предыдущей,
-      // Delete в конце — подтянуть сюда следующую
+      // Like a text editor: Backspace at the start merges with the previous caption,
+      // Delete at the end pulls in the next one
       if (e.key === "Backspace" && collapsed && ta.selectionStart === 0 && i > 0) {
         e.preventDefault();
         return moveText(i, -1);
@@ -628,8 +628,8 @@ function renderCaptionList() {
   if (focused != null) $(`.cap[data-i="${focused}"] textarea`)?.focus();
 }
 
-// Слова подписи «чипсами» в шрифтах комбинированного стиля. Щелчок по слову:
-// в стиле-акценте — сделать/убрать акцент, в стиле-строках — начать/не начинать с него строку.
+// Caption words as "chips" in the combo style's fonts. Clicking a word:
+// in an accent style toggles the accent, in a stack style toggles a line break before it.
 function currentCombo() {
   if (ed.style.preset !== "combo") return null;
   return combos.find((c) => c.id === ed.style.combo) || ed.style.comboDef || combos[0];
@@ -646,12 +646,12 @@ function renderChips(box, i) {
   box.innerHTML = "";
   cap.words.forEach((w, j) => {
     const [role, newLine, roleIdx] = layout[j];
-    if (newLine) box.insertAdjacentHTML("beforeend", '<span class="chip-br" title="Новая строка">↵</span>');
+    if (newLine) box.insertAdjacentHTML("beforeend", '<span class="chip-br" title="New line">↵</span>');
     const chip = document.createElement("button");
     chip.className = `chip role-${roleIdx}`;
     chip.textContent = applyCase(w.text, role.case, ed.style.uppercase);
     chip.style.fontFamily = `"sub-${role.font}", sans-serif`;
-    chip.title = accent ? "Сделать акцентом / убрать акцент" : j === 0 ? "Первое слово всегда начинает строку" : "Начать строку с этого слова / убрать перенос";
+    chip.title = accent ? "Toggle accent" : j === 0 ? "The first word always starts a line" : "Start a line at this word / remove the break";
     chip.disabled = !accent && j === 0;
     chip.onclick = () => toggleChip(i, j, accent, layout);
     box.appendChild(chip);
@@ -659,8 +659,8 @@ function renderChips(box, i) {
   if (manual) {
     const reset = document.createElement("button");
     reset.className = "btn ghost small chip-reset";
-    reset.textContent = "Авто";
-    reset.title = "Вернуть автоматическую раскладку";
+    reset.textContent = "Auto";
+    reset.title = "Restore automatic layout";
     reset.onclick = () => {
       const caps = ed.captions.slice();
       caps[i] = { ...cap, words: cap.words.map(({ em, br, ...w }) => w) };
@@ -674,11 +674,11 @@ function toggleChip(i, j, accent, layout) {
   const cap = ed.captions[i];
   let words = cap.words.map((w) => ({ ...w }));
   if (accent) {
-    // Первый щелчок заменяет автоматический акцент выбранным словом
+    // The first click replaces the automatic accent with the chosen word
     if (!words.some((w) => w.em)) words.forEach((w) => delete w.em);
     if (words[j].em) delete words[j].em; else words[j].em = true;
   } else {
-    // Первый щелчок фиксирует текущие автоматические переносы, дальше правим их
+    // The first click freezes the current automatic breaks; edits apply on top of them
     if (!words.some((w, k) => k > 0 && w.br)) layout.forEach(([, nl], k) => nl && (words[k].br = true));
     if (words[j].br) delete words[j].br; else words[j].br = true;
   }
@@ -687,14 +687,14 @@ function toggleChip(i, j, accent, layout) {
   commit(caps);
 }
 
-// Перенос текста подписи i в соседнюю: dir = -1 — в конец предыдущей, 1 — в начало следующей.
-// Подписи склеиваются в одну; свойства (например, своя позиция) остаются у той, куда перенесли.
+// Move caption i's text into a neighbour: dir = -1 — to the end of the previous one, 1 — to the start of the next.
+// The captions are merged; properties (e.g. own position) stay with the target caption.
 function moveText(i, dir, focusIdx) {
   const j = i + dir;
   if (j < 0 || j >= ed.captions.length) return;
   const caps = ed.captions.slice();
   const [first, second] = dir < 0 ? [caps[j], caps[i]] : [caps[i], caps[j]];
-  const joinAt = captionText(first).length + 1; // курсор — на место стыка
+  const joinAt = captionText(first).length + 1; // cursor goes to the join point
   caps.splice(Math.min(i, j), 2, mergeCaptions(first, second, dir < 0 ? "a" : "b"));
   const target = Math.min(i, j);
   commit(caps);
@@ -711,7 +711,7 @@ function doSplit(i, ta) {
   const c = ed.captions[i];
   const before = ta.value.slice(0, ta.selectionStart).trim();
   const wi = before ? before.split(/\s+/).length : 0;
-  if (wi <= 0 || wi >= c.words.length) return toast("Поставьте курсор между словами");
+  if (wi <= 0 || wi >= c.words.length) return toast("Place the cursor between words");
   const caps = ed.captions.slice();
   caps.splice(i, 1, ...splitCaption(c, wi));
   commit(caps);
@@ -734,18 +734,18 @@ function capAction(act, i, ta) {
   } else if (act === "insert") {
     const next = caps[i + 1];
     const s = c.end, en = next ? Math.min(next.start, s + 2) : Math.min(s + 2, ed.project.duration);
-    if (en - s < 0.2) return toast("Нет места для новой подписи");
-    caps.splice(i + 1, 0, { start: s, end: en, words: [{ text: "Текст", start: s, end: en }] });
+    if (en - s < 0.2) return toast("No room for a new caption");
+    caps.splice(i + 1, 0, { start: s, end: en, words: [{ text: "Text", start: s, end: en }] });
   }
   commit(caps);
 }
 
 $("#btn-add-cap").onclick = () => {
   const t = video.currentTime;
-  if (findCaption(ed.captions, t) >= 0) return toast("В этот момент уже есть подпись — переместите курсор");
+  if (findCaption(ed.captions, t) >= 0) return toast("There is already a caption here — move the playhead");
   const next = ed.captions.find((c) => c.start > t);
   const en = Math.min(t + 2, next ? next.start : ed.project.duration);
-  commit([...ed.captions, { start: t, end: en, words: [{ text: "Текст", start: t, end: en }] }]);
+  commit([...ed.captions, { start: t, end: en, words: [{ text: "Text", start: t, end: en }] }]);
   const i = findCaption(ed.captions, t + 0.01);
   select(i, true);
   const ta = $(`.cap[data-i="${i}"] textarea`);
@@ -755,7 +755,7 @@ $("#btn-add-cap").onclick = () => {
 
 $("#btn-rechunk").onclick = () => {
   commit(chunkWords(flattenWords(ed.captions), chunkOpts()));
-  toast("Подписи разбиты заново");
+  toast("Captions re-split");
 };
 $$("[data-shift]").forEach((b) => (b.onclick = () => commit(shiftAll(ed.captions, +b.dataset.shift))));
 $("#btn-replace").onclick = () => {
@@ -769,17 +769,17 @@ $("#btn-replace").onclick = () => {
     n += text.split(find).length - 1;
     return retimeText(c, text.split(find).join(repl));
   }).filter((c) => c.words.length);
-  if (!n) return toast("Ничего не найдено");
+  if (!n) return toast("Nothing found");
   commit(caps);
-  toast(`Заменено: ${n}`);
+  toast(`Replaced: ${n}`);
 };
 $("#btn-restt").onclick = () => {
-  if (!confirm("Распознать заново? Текущие правки будут заменены.")) return;
+  if (!confirm("Transcribe again? Your current edits will be replaced.")) return;
   $("#stt-card").hidden = false;
   $("#stt-card").scrollIntoView({ behavior: "smooth" });
 };
 
-// ------------------------------------------------------------------ распознавание
+// ------------------------------------------------------------------ transcription
 
 async function startTranscribe() {
   const btn = $("#btn-stt");
@@ -795,11 +795,11 @@ async function startTranscribe() {
     const res = await pollJob(job, $("#stt-progress"));
     if (ed.project?.id !== pid) return;
     if (!res.words.length) {
-      toast("Речь не найдена в видео", true);
+      toast("No speech found in the video", true);
       return;
     }
     commit(chunkWords(res.words, chunkOpts()));
-    toast(`Готово! Распознано слов: ${res.words.length}`);
+    toast(`Done! Words recognized: ${res.words.length}`);
   } catch (e) {
     toast(e.message, true);
   } finally {
@@ -808,15 +808,15 @@ async function startTranscribe() {
 }
 $("#btn-stt").onclick = startTranscribe;
 
-// Vosk распознаёт только украинский, без пунктуации и подсказок
+// Vosk only handles Ukrainian, with no punctuation and no prompts
 function syncEngine() {
   const vosk = $("#stt-model").value.startsWith("vosk:");
   if (vosk) $("#stt-lang").value = "uk";
   $("#stt-lang").disabled = vosk;
   $("#stt-prompt-box").hidden = vosk;
   $("#stt-note").textContent = vosk
-    ? "Vosk выдаёт текст без заглавных букв и знаков препинания — их можно поправить в редакторе. Модель скачивается при первом запуске."
-    : "Первый запуск скачивает модель распознавания — это может занять пару минут.";
+    ? "Vosk outputs text without capitalization or punctuation — you can fix them in the editor. The model is downloaded on first run."
+    : "The first run downloads the speech model — this may take a couple of minutes.";
   localStorage.setItem("stt-model", $("#stt-model").value);
 }
 $("#stt-model").onchange = syncEngine;
@@ -825,7 +825,7 @@ if (localStorage.getItem("stt-model")) $("#stt-model").value = localStorage.getI
 if (localStorage.getItem("stt-lang")) $("#stt-lang").value = localStorage.getItem("stt-lang");
 syncEngine();
 
-// ------------------------------------------------------------------ стиль
+// ------------------------------------------------------------------ style
 
 const STYLE_FIELDS = ["font", "fontSize", "uppercase", "color", "highlightColor", "outlineColor", "boxColor",
   "outline", "shadow", "boxOpacity", "wordScale", "position", "x", "maxWidth", "lineSpacing", "animation", "reveal"];
@@ -849,7 +849,7 @@ function fmtOut(key, v) {
   if (key === "wordScale") return `${Math.round(v * 100)}%`;
   if (key === "position" || key === "maxWidth") return `${v}%`;
   if (key === "lineSpacing") return `${Math.round(v * 100)}%`;
-  if (key === "x") return v == 50 ? "центр" : `${Math.round(v)}%`;
+  if (key === "x") return v == 50 ? "center" : `${Math.round(v)}%`;
   return String(v);
 }
 
@@ -876,8 +876,8 @@ function syncStyleControls() {
   }
   const activeId = s.preset === "combo" ? `combo:${s.combo}` : s.preset;
   $$(".preset").forEach((el) => el.classList.toggle("active", el.dataset.id === activeId));
-  $("#st-outline").closest(".slider").querySelector("span").textContent = s.preset === "combo" ? "Тень вокруг" : "Обводка";
-  $('[data-for="highlightColor"]').firstChild.textContent = s.preset === "combo" ? "Второй цвет " : "Акцент ";
+  $("#st-outline").closest(".slider").querySelector("span").textContent = s.preset === "combo" ? "Shadow around" : "Outline";
+  $('[data-for="highlightColor"]').firstChild.textContent = s.preset === "combo" ? "Second color " : "Accent ";
 }
 
 function setStyle(patch) {
@@ -903,18 +903,18 @@ function renderPresets() {
     const b = document.createElement("button");
     b.className = "preset";
     b.dataset.id = p.id;
-    b.innerHTML = `<div class="pv pv-${p.id}"><span>Твои</span> <span class="on">слова</span></div><div class="pn">${p.name}</div>`;
+    b.innerHTML = `<div class="pv pv-${p.id}"><span>Your</span> <span class="on">words</span></div><div class="pn">${p.name}</div>`;
     b.onclick = () => setStyle(p.style);
     box.appendChild(b);
   }
 }
 
-// Карточки комбинированных стилей: образец набирается шрифтами самого шаблона
+// Combo style cards: the sample is set in the template's own fonts
 function comboCardPreview(c) {
   const pv = document.createElement("div");
   pv.className = "pv pv-combo";
   const roles = c.layout === "accent" ? [c.roles[0], c.roles[1], c.roles[0]] : [c.roles[0], ...c.roles.slice(1), c.roles[c.roles.length - 1]].slice(0, 3);
-  ["Твої", "яскраві", "слова"].forEach((word, i) => {
+  ["Your", "bright", "words"].forEach((word, i) => {
     const r = roles[i % roles.length];
     const sp = document.createElement("span");
     sp.textContent = applyCase(word, r.case, false);
@@ -953,7 +953,7 @@ function renderCombos() {
     if (c.custom) {
       const edit = document.createElement("span");
       edit.className = "p-edit";
-      edit.title = "Изменить стиль";
+      edit.title = "Edit style";
       edit.textContent = "✎";
       edit.onclick = (e) => { e.stopPropagation(); openComboEditor(c); };
       b.appendChild(edit);
@@ -962,27 +962,27 @@ function renderCombos() {
   }
   const add = document.createElement("button");
   add.className = "preset preset-add";
-  add.innerHTML = '<span class="plus">＋</span><span class="pn">Свой стиль</span>';
+  add.innerHTML = '<span class="plus">＋</span><span class="pn">Custom style</span>';
   add.onclick = () => openComboEditor(null);
   box.appendChild(add);
   syncStyleControls();
 }
 
-// ------------------------------------------------------------------ конструктор своих стилей
+// ------------------------------------------------------------------ custom style builder
 
 const ce = { draft: null, saved: null, prevStyle: null };
 const FX_STRENGTH_LABEL = {
-  glow: "Сила", shadow: "Сдвиг", outline: "Толщина", sparkle: "Количество", hearts: "Количество", confetti: "Количество",
-  fireflies: "Количество", bubbles: "Количество", snow: "Количество", burst: "Лучи", marker: "Насыщенность", underline: "Толщина",
+  glow: "Strength", shadow: "Offset", outline: "Thickness", sparkle: "Amount", hearts: "Amount", confetti: "Amount",
+  fireflies: "Amount", bubbles: "Amount", snow: "Amount", burst: "Rays", marker: "Intensity", underline: "Thickness",
 };
-// Цвет эффекта по умолчанию; null — второй цвет стиля
+// Default effect color; null — the style's second color
 const FX_DEFAULT_COLOR = {
   sparkle: "#FFFFFF", hearts: "#FF4D8D", fireflies: "#FFD27A", bubbles: "#9BE7FF", snow: "#FFFFFF", confetti: "#FFFFFF",
 };
 const FX_BADGE = { sparkle: "✦", hearts: "♥", confetti: "⁂", fireflies: "•", bubbles: "○", snow: "❄", burst: "✺" };
 const LAYOUT_HINT = {
-  stack: "Подпись делится на две строки: первая — основным шрифтом, вторая — вторым.",
-  accent: "Слова набраны основным шрифтом, главное слово — вторым. Акцент можно выбрать щелчком по слову во вкладке «Текст».",
+  stack: "The caption is split into two lines: the first in the main font, the second in the second font.",
+  accent: "Words use the main font and the key word uses the second one. Pick the accent by clicking a word on the Text tab.",
 };
 
 function upsertCombo(c) {
@@ -1006,11 +1006,11 @@ function openComboEditor(combo) {
     style: { color: "#FFFFFF", highlightColor: "#FFE45C", fontSize: 5.0, outline: 4 },
     custom: true,
   };
-  $("#ce-title").textContent = combo ? "Изменить стиль" : "Новый стиль";
+  $("#ce-title").textContent = combo ? "Edit style" : "New style";
   $("#ce-delete").hidden = !combo;
   $("#combo-editor").hidden = false;
   fillComboEditor();
-  // размер и обводка — из стиля; дальше их можно менять обычными ползунками ниже
+  // size and outline come from the style; they can then be tweaked with the regular sliders below
   ed.style = { ...ed.style, fontSize: ce.draft.style.fontSize, outline: ce.draft.style.outline, lineSpacing: ce.draft.style.lineSpacing ?? 1 };
   applyDraft();
   renderCombos();
@@ -1028,7 +1028,7 @@ function fillComboEditor() {
     $(".ce-size", box).value = r.size ?? 1;
     $(".ce-size", box).nextElementSibling.textContent = `${Math.round((r.size ?? 1) * 100)}%`;
     $(".ce-spacing", box).value = r.spacing ?? 0;
-    $(".ce-spacing", box).nextElementSibling.textContent = r.spacing ? `${Math.round(r.spacing * 100)}%` : "нет";
+    $(".ce-spacing", box).nextElementSibling.textContent = r.spacing ? `${Math.round(r.spacing * 100)}%` : "none";
     $$(".ce-case button", box).forEach((b) => b.classList.toggle("on", b.dataset.v === (r.case || "")));
     const acc = $(".ce-accent", box);
     if (acc) acc.checked = r.color === "accent";
@@ -1042,7 +1042,7 @@ function fillComboEditor() {
         $(".ce-fx-strength", fxBox).value = r.fx.strength;
         $(".ce-fx-strength", fxBox).nextElementSibling.textContent = r.fx.strength;
         $(".ce-fx-strength-label", fxBox).textContent = FX_STRENGTH_LABEL[type];
-        $(".ce-fx-color", fxBox).closest(".row").hidden = type === "confetti"; // у конфетти своя палитра
+        $(".ce-fx-color", fxBox).closest(".row").hidden = type === "confetti"; // confetti has its own palette
       }
       const an = r.anim?.type || "";
       $$(".ce-anim-type button", fxBox).forEach((b) => b.classList.toggle("on", b.dataset.v === an));
@@ -1059,12 +1059,12 @@ function fillComboEditor() {
   $("#ce-color2").value = d.style.highlightColor;
 }
 
-// Выбор шрифта образцами: на телефоне обычный <select> показывает все шрифты одинаково
+// Font picker with samples: on phones a plain <select> renders every font the same
 const FONT_GROUPS = [
-  ["Гротески", ["Montserrat", "Montserrat SemiBold", "Inter", "Roboto", "Rubik", "Comfortaa", "Unbounded", "Russo One"]],
-  ["Узкие", ["Oswald", "PT Sans Narrow"]],
-  ["С засечками", ["Playfair Display", "Playfair Display Italic", "Cormorant Italic"]],
-  ["Рукописные", ["Marck Script", "Caveat", "Bad Script", "Lobster", "Great Vibes"]],
+  ["Sans serif", ["Montserrat", "Montserrat SemiBold", "Inter", "Roboto", "Rubik", "Comfortaa", "Unbounded", "Russo One"]],
+  ["Condensed", ["Oswald", "PT Sans Narrow"]],
+  ["Serif", ["Playfair Display", "Playfair Display Italic", "Cormorant Italic"]],
+  ["Handwritten", ["Marck Script", "Caveat", "Bad Script", "Lobster", "Great Vibes"]],
 ];
 
 function fontTile(cls, name, role) {
@@ -1074,7 +1074,7 @@ function fontTile(cls, name, role) {
   b.dataset.font = name;
   const sample = document.createElement("span");
   sample.className = "fp-sample";
-  sample.textContent = applyCase("Яскраві слова", role.case, false);
+  sample.textContent = applyCase("Bright words", role.case, false);
   sample.style.fontFamily = `"sub-${name}", sans-serif`;
   if (role.spacing) sample.style.letterSpacing = `${role.spacing}em`;
   const label = document.createElement("span");
@@ -1094,7 +1094,7 @@ function renderFontPicker(picker, role) {
   grid.className = "fp-grid";
   const known = new Set(fonts.map((f) => f.name));
   const grouped = new Set(FONT_GROUPS.flatMap(([, list]) => list));
-  const groups = [...FONT_GROUPS, ["Другие", [...known].filter((n) => !grouped.has(n))]];
+  const groups = [...FONT_GROUPS, ["Other", [...known].filter((n) => !grouped.has(n))]];
   for (const [title, list] of groups) {
     const names = list.filter((n) => known.has(n));
     if (!names.length) continue;
@@ -1109,14 +1109,14 @@ function renderFontPicker(picker, role) {
   picker.classList.toggle("open", open);
 }
 
-// Черновик сразу показывается на видео
+// The draft is shown on the video right away
 function applyDraft() {
   upsertCombo(ce.draft);
   setStyle({ preset: "combo", combo: ce.draft.id, comboDef: ce.draft, uppercase: false, color: ce.draft.style.color, highlightColor: ce.draft.style.highlightColor });
   const card = $(`.preset[data-id="combo:${ce.draft.id}"]`);
   if (card) {
     card.querySelector(".pv").replaceWith(comboCardPreview(ce.draft));
-    card.querySelector(".pn").textContent = ce.draft.name || "Новый стиль";
+    card.querySelector(".pn").textContent = ce.draft.name || "New style";
   }
 }
 
@@ -1125,7 +1125,7 @@ function editDraft(fn) {
   fn(ce.draft);
   fillComboEditor();
   applyDraft();
-  // «чипсы» на вкладке «Текст» набраны шрифтами стиля — обновим их (не чаще раза за кадр)
+  // the "chips" on the Text tab use the style's fonts — refresh them (at most once per frame)
   cancelAnimationFrame(chipsFrame);
   chipsFrame = requestAnimationFrame(renderCaptionList);
 }
@@ -1164,8 +1164,8 @@ $$(".ce-role").forEach((box) => {
     $$(".ce-fx-type button", fxBox).forEach((b) => (b.onclick = () => editDraft((d) => {
       const r = role(d);
       if (!b.dataset.v) return delete r.fx;
-      // при смене эффекта — его цвет по умолчанию; между свечением/тенью/обводкой/маркером
-      // (у которых это второй цвет стиля) выбранный цвет сохраняется
+      // switching effects resets to its default color; between glow/shadow/outline/marker
+      // (which use the style's second color) the chosen color is kept
       const own = (t) => FX_DEFAULT_COLOR[t] ?? null;
       const keep = r.fx && own(r.fx.type) === null && own(b.dataset.v) === null;
       const color = keep ? r.fx.color : own(b.dataset.v) ?? d.style.highlightColor;
@@ -1205,17 +1205,17 @@ $("#ce-cancel").onclick = cancelComboEditor;
 
 $("#ce-save").onclick = async () => {
   const d = ce.draft;
-  // размер и обводку берём из текущих ползунков стиля — пользователь мог их подстроить
+  // take size and outline from the current style sliders — the user may have tweaked them
   d.style.fontSize = ed.style.fontSize;
   d.style.outline = ed.style.outline;
   d.style.lineSpacing = ed.style.lineSpacing;
-  if (!d.name.trim()) d.name = "Мой стиль";
+  if (!d.name.trim()) d.name = "My style";
   try {
     const saved = await api(`/api/custom-combos/${d.id}`, { method: "PUT", body: d });
     upsertCombo(saved);
     closeComboEditor();
     applyCombo(saved);
-    toast(`Стиль «${saved.name}» сохранён`);
+    toast(`Style "${saved.name}" saved`);
   } catch (e) {
     toast(e.message, true);
   }
@@ -1223,7 +1223,7 @@ $("#ce-save").onclick = async () => {
 
 $("#ce-delete").onclick = async () => {
   const d = ce.draft;
-  if (!confirm(`Удалить стиль «${ce.saved.name}»? В проектах, где он уже выбран, он сохранится.`)) return;
+  if (!confirm(`Delete style "${ce.saved.name}"? Projects already using it will keep it.`)) return;
   await api(`/api/custom-combos/${d.id}`, { method: "DELETE" });
   combos.splice(combos.findIndex((c) => c.id === d.id), 1);
   overlay.setCombos(combos);
@@ -1231,10 +1231,10 @@ $("#ce-delete").onclick = async () => {
   closeComboEditor();
   ed.style = { ...prev, comboDef: prev.combo === d.id ? ce.saved ?? prev.comboDef : prev.comboDef };
   setStyle({});
-  toast("Стиль удалён");
+  toast("Style deleted");
 };
 
-// ------------------------------------------------------------------ экспорт
+// ------------------------------------------------------------------ export
 
 function showResult() {
   const url = `/api/projects/${ed.project.id}/output?v=${Date.now()}`;
@@ -1243,8 +1243,8 @@ function showResult() {
   $("#render-result").hidden = false;
 }
 
-// При интервале ≠ 100% сервер выводит каждую строку отдельно — ему нужно знать, где
-// предпросмотр переносит строки. Считаем это во скрытом слое того же размера, что и превью.
+// With line spacing ≠ 100% the server emits each line separately, so it needs to know where
+// the preview breaks lines. We compute that in a hidden layer the same size as the preview.
 function withLines(captions, style) {
   const f = style.lineSpacing ?? 1;
   const needLines = !(Math.abs(f - 1) < 1e-3 || style.preset === "box" || style.preset === "pop");
@@ -1264,7 +1264,7 @@ function withLines(captions, style) {
   ov.setFonts(fonts);
   ov.setCombos(combos);
   ov.configure({ style, width: p.width, height: p.height, displayHeight: h });
-  // ширина слов меняется по ходу подписи только у увеличенного активного слова
+  // word widths change during a caption only for the scaled-up active word
   const perWord = (style.preset === "highlight" || style.preset === "wordbox") && Math.abs(style.wordScale - 1) > 1e-3;
   try {
     const toVideo = p.height / h;
@@ -1277,7 +1277,7 @@ function withLines(captions, style) {
           : ov.layoutStarts(cap, cap.words.length - 1);
       }
       if (needFx) {
-        // рамки слов с блёстками в пикселях видео — вокруг них сервер рисует звёзды
+        // boxes of sparkle words in video pixels — the server draws stars around them
         ov.layoutStarts(cap, cap.words.length - 1);
         out.fx = Object.fromEntries(Object.entries(ov.lastFxBoxes).map(([j, b]) => [j, b.map((v) => +(v * toVideo).toFixed(1))]));
       }
@@ -1289,7 +1289,7 @@ function withLines(captions, style) {
 }
 
 async function render() {
-  if (!ed.captions.length) return toast("Сначала добавьте субтитры", true);
+  if (!ed.captions.length) return toast("Add subtitles first", true);
   const btn = $("#btn-render");
   btn.disabled = true;
   $("#render-result").hidden = true;
@@ -1301,7 +1301,7 @@ async function render() {
     });
     await pollJob(job, $("#render-progress"));
     showResult();
-    toast("Видео готово!");
+    toast("Video is ready!");
   } catch (e) {
     toast(e.message, true);
   } finally {
@@ -1324,7 +1324,7 @@ $$("[data-dl]").forEach((b) => (b.onclick = async () => {
   }
 }));
 
-// ------------------------------------------------------------------ вкладки и горячие клавиши
+// ------------------------------------------------------------------ tabs and hotkeys
 
 function switchTab(name) {
   $$(".tabs button").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
@@ -1352,7 +1352,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowRight") seek(video.currentTime + (e.shiftKey ? 1 : 0.1));
 });
 
-// ------------------------------------------------------------------ старт
+// ------------------------------------------------------------------ startup
 
 renderPresets();
 Promise.all([
@@ -1365,5 +1365,5 @@ Promise.all([
     overlay.setCombos(combos);
     renderCombos();
   })
-  .catch(() => toast("Не удалось загрузить шрифты", true))
+  .catch(() => toast("Failed to load fonts", true))
   .finally(route);

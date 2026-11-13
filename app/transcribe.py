@@ -1,4 +1,4 @@
-"""Распознавание речи с пословными таймкодами через faster-whisper."""
+"""Speech recognition with word-level timestamps via faster-whisper."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ _lock = threading.Lock()
 
 def get_model(name: str) -> WhisperModel:
     if name not in MODELS:
-        raise ValueError(f"Неизвестная модель: {name}")
+        raise ValueError(f"Unknown model: {name}")
     with _lock:
         if name not in _models:
             _models[name] = WhisperModel(name, device="auto", compute_type="int8")
@@ -25,7 +25,7 @@ def get_model(name: str) -> WhisperModel:
 
 
 def load_audio(path: str, sr: int = 16000) -> np.ndarray:
-    """Декодирует звук через ffmpeg в моно float32 16 кГц (формат, который ждёт Whisper)."""
+    """Decodes audio via ffmpeg to mono float32 at 16 kHz (the format Whisper expects)."""
     out = subprocess.run(
         ["ffmpeg", "-v", "error", "-i", path, "-vn", "-ac", "1", "-ar", str(sr), "-f", "f32le", "-"],
         capture_output=True, check=True,
@@ -41,10 +41,10 @@ def transcribe(
     on_progress: Callable[[float, str], None] | None = None,
 ) -> dict:
     if on_progress:
-        on_progress(0.0, "Загрузка модели…")
+        on_progress(0.0, "Loading model…")
     model = get_model(model_name)
     if on_progress:
-        on_progress(0.01, "Распознавание речи…")
+        on_progress(0.01, "Transcribing speech…")
 
     segments, info = model.transcribe(
         load_audio(path),
@@ -62,6 +62,6 @@ def transcribe(
             if text:
                 words.append({"text": text, "start": round(w.start, 3), "end": round(w.end, 3)})
         if on_progress:
-            on_progress(min(0.99, seg.end / duration), "Распознавание речи…")
+            on_progress(min(0.99, seg.end / duration), "Transcribing speech…")
 
     return {"language": info.language, "duration": duration, "words": words}

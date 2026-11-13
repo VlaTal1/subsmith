@@ -27,7 +27,7 @@ a { color: inherit; text-decoration: none; }
 .spacer { flex: 1; }
 h3 { margin: 0 0 10px; font-size: 15px; }
 
-/* ------------------------------------------------ элементы управления */
+/* ------------------------------------------------ controls */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   height: 36px; padding: 0 14px; border-radius: 10px;
@@ -78,7 +78,7 @@ input[type="range"] { accent-color: var(--accent); padding: 0; border: 0; backgr
 }
 .toast.error { border-color: var(--danger); color: #ffd0d9; }
 
-/* ------------------------------------------------ верхняя панель */
+/* ------------------------------------------------ top bar */
 .topbar {
   display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 16px;
   border-bottom: 1px solid var(--line); background: var(--panel);
@@ -91,7 +91,7 @@ input[type="range"] { accent-color: var(--accent); padding: 0; border: 0; backgr
 .project-name { background: transparent; border-color: transparent; font-weight: 600; font-size: 15px; width: min(320px, 40vw); }
 .project-name:hover { border-color: var(--line); }
 
-/* ------------------------------------------------ главная */
+/* ------------------------------------------------ home */
 .home { max-width: 1100px; margin: 0 auto; padding: 28px 18px 60px; }
 .dropzone {
   display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
@@ -118,7 +118,7 @@ input[type="range"] { accent-color: var(--accent); padding: 0; border: 0; backgr
 .p-del { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.55) !important; opacity: 0; }
 .project:hover .p-del { opacity: 1; }
 
-/* ------------------------------------------------ редактор */
+/* ------------------------------------------------ editor */
 .editor { height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
 .editor-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 400px; }
 .stage { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: #0a0b0e; }
@@ -237,7 +237,7 @@ input[type="range"] { accent-color: var(--accent); padding: 0; border: 0; backgr
 
 #render-result video { width: 100%; max-height: 360px; background: #000; border-radius: 8px; margin: 12px 0 10px; }
 
-/* ------------------------------------------------ слой субтитров */
+/* ------------------------------------------------ subtitle overlay */
 .sub-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .sub-block { position: absolute; display: flex; justify-content: center; text-align: center; pointer-events: auto; cursor: grab; touch-action: none; border-radius: 6px; }
 .sub-block:empty { pointer-events: none; }
@@ -268,13 +268,13 @@ input[type="range"] { accent-color: var(--accent); padding: 0; border: 0; backgr
 @keyframes ca-rainbow { to { filter: hue-rotate(360deg); } }
 @keyframes ca-bounce { 0% { transform: scale(.3); } 6% { transform: scale(1.25); } 15% { transform: scale(.94); } 21%, 100% { transform: scale(1); } }
 @keyframes ca-glow { 50% { filter: drop-shadow(0 0 4px currentColor) brightness(1.2); } }
-.sub-block { z-index: 0; } /* свой контекст наложения: маркер ложится под текст */
+.sub-block { z-index: 0; } /* own stacking context: the marker goes under the text */
 .fx-particle { position: absolute; pointer-events: none; }
 .fx-bar { position: absolute; z-index: -1; pointer-events: none; transform-origin: 0 50%; }
 .fx-star { position: absolute; pointer-events: none; clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%); }
 .snap-guide { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; border-left: 1px dashed #ff4d6d; pointer-events: none; }
 #btn-move-mode.on { color: var(--accent-2); }
-.sub-text { display: inline-block; white-space: nowrap; transform-origin: 50% 100%; } /* переносы ставит wrapLines() */
+.sub-text { display: inline-block; white-space: nowrap; transform-origin: 50% 100%; } /* line breaks are set by wrapLines() */
 .sub-text .w { white-space: pre; }
 .sub-text .w.k { position: relative; display: inline-block; }
 .sub-text .k-fill { position: absolute; left: 0; top: 0; text-shadow: none; white-space: pre; }
@@ -285,7 +285,7 @@ input[type="range"] { accent-color: var(--accent); padding: 0; border: 0; backgr
 @keyframes sub-pop { from { transform: scale(.7); } to { transform: scale(1); } }
 @keyframes sub-fade { from { opacity: 0; } to { opacity: 1; } }
 
-/* ------------------------------------------------ мобильные */
+/* ------------------------------------------------ mobile */
 @media (max-width: 860px) {
   .editor { height: auto; min-height: 100dvh; }
   .editor-body { grid-template-columns: minmax(0, 1fr); }
@@ -294,7 +294,7 @@ input[type="range"] { accent-color: var(--accent); padding: 0; border: 0; backgr
   .transport label { display: none; }
   .topbar { height: 48px; padding: 0 8px; gap: 6px; }
   .stage { position: sticky; top: 0; z-index: 5; }
-  /* Крупное превью; компактное — кнопкой ⤡ или автоматически при правке текста */
+  /* Large preview; compact one via the ⤡ button or automatically while editing text */
   .frame-box { flex: none; height: 64dvh; padding: 4px; transition: height .2s; }
   .editor.compact .frame-box { height: 32dvh; }
   .transport { padding: 2px 8px; }

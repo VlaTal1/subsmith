@@ -1,42 +1,42 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Субтитры</title>
+  <title>subsmith</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <!-- ============================== Главная ============================== -->
+  <!-- ============================== Home ================================== -->
   <section id="view-home" class="view" hidden>
     <header class="topbar">
-      <div class="brand"><span class="logo">Cc</span> Субтитры</div>
-      <a class="btn ghost" href="/teleprompter.html">🎙 Телесуфлёр</a>
+      <div class="brand"><span class="logo">Cc</span> subsmith</div>
+      <a class="btn ghost" href="/teleprompter.html">🎙 Teleprompter</a>
     </header>
     <main class="home">
       <label id="dropzone" class="dropzone">
         <input id="file-input" type="file" accept="video/*" hidden>
         <div class="dz-icon">＋</div>
-        <div class="dz-title">Загрузите видео</div>
-        <div class="dz-sub">Перетащите файл сюда или нажмите, чтобы выбрать. Речь распознается автоматически.</div>
+        <div class="dz-title">Upload a video</div>
+        <div class="dz-sub">Drop a file here or click to choose one. Speech is transcribed automatically.</div>
         <div id="upload-progress" class="progress" hidden><div></div></div>
       </label>
-      <h2 class="section-title">Проекты</h2>
+      <h2 class="section-title">Projects</h2>
       <div id="projects" class="projects"></div>
-      <p id="projects-empty" class="muted" hidden>Пока нет проектов.</p>
+      <p id="projects-empty" class="muted" hidden>No projects yet.</p>
     </main>
   </section>
 
-  <!-- ============================== Редактор ============================== -->
+  <!-- ============================== Editor ================================ -->
   <section id="view-editor" class="view editor" hidden>
     <header class="topbar">
-      <a class="btn ghost icon" href="#/" title="К проектам">←</a>
+      <a class="btn ghost icon" href="#/" title="Back to projects">←</a>
       <input id="project-name" class="project-name" spellcheck="false">
       <span id="save-status" class="muted small"></span>
       <div class="spacer"></div>
-      <button id="btn-undo" class="btn ghost icon" title="Отменить (Ctrl+Z)">↶</button>
-      <button id="btn-redo" class="btn ghost icon" title="Повторить (Ctrl+Shift+Z)">↷</button>
-      <button id="btn-export-top" class="btn primary">Экспорт</button>
+      <button id="btn-undo" class="btn ghost icon" title="Undo (Ctrl+Z)">↶</button>
+      <button id="btn-redo" class="btn ghost icon" title="Redo (Ctrl+Shift+Z)">↷</button>
+      <button id="btn-export-top" class="btn primary">Export</button>
     </header>
 
     <div class="editor-body">
@@ -50,12 +50,12 @@
           </div>
         </div>
         <div class="transport">
-          <button id="btn-play" class="btn ghost icon" title="Пробел">▶</button>
+          <button id="btn-play" class="btn ghost icon" title="Space">▶</button>
           <span id="time" class="time">0:00.0 / 0:00.0</span>
           <div class="spacer"></div>
-          <button id="btn-move-mode" class="btn ghost small" title="Что двигать, когда перетаскиваете текст по видео"></button>
-          <button id="btn-size" class="btn ghost icon" title="Размер превью">⤡</button>
-          <label class="small muted">Масштаб <input id="zoom" type="range" min="20" max="400" value="90"></label>
+          <button id="btn-move-mode" class="btn ghost small" title="What moves when you drag text over the video"></button>
+          <button id="btn-size" class="btn ghost icon" title="Preview size">⤡</button>
+          <label class="small muted">Zoom <input id="zoom" type="range" min="20" max="400" value="90"></label>
         </div>
         <div id="timeline" class="timeline">
           <div id="tl-inner" class="tl-inner">
@@ -68,208 +68,208 @@
 
       <aside class="side">
         <nav class="tabs">
-          <button data-tab="text" class="active">Текст</button>
-          <button data-tab="style">Стиль</button>
-          <button data-tab="export">Экспорт</button>
+          <button data-tab="text" class="active">Text</button>
+          <button data-tab="style">Style</button>
+          <button data-tab="export">Export</button>
         </nav>
 
-        <!-- ---------- Текст ---------- -->
+        <!-- ---------- Text ---------- -->
         <div class="tab" data-tab="text">
           <div id="stt-card" class="card">
-            <h3>Автоматические субтитры</h3>
+            <h3>Automatic subtitles</h3>
             <div class="row">
-              <label>Язык
+              <label>Language
                 <select id="stt-lang">
-                  <option value="">Определить автоматически</option>
-                  <option value="ru">Русский</option>
-                  <option value="uk">Украинский</option>
-                  <option value="en">Английский</option>
-                  <option value="de">Немецкий</option>
-                  <option value="pl">Польский</option>
-                  <option value="es">Испанский</option>
-                  <option value="fr">Французский</option>
-                  <option value="it">Итальянский</option>
-                  <option value="pt">Португальский</option>
-                  <option value="tr">Турецкий</option>
-                  <option value="kk">Казахский</option>
+                  <option value="">Detect automatically</option>
+                  <option value="ru">Russian</option>
+                  <option value="uk">Ukrainian</option>
+                  <option value="en">English</option>
+                  <option value="de">German</option>
+                  <option value="pl">Polish</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="it">Italian</option>
+                  <option value="pt">Portuguese</option>
+                  <option value="tr">Turkish</option>
+                  <option value="kk">Kazakh</option>
                 </select>
               </label>
-              <label>Модель
+              <label>Model
                 <select id="stt-model">
-                  <optgroup label="Whisper — много языков">
-                    <option value="whisper:base">Whisper · быстро</option>
-                    <option value="whisper:small">Whisper · сбалансировано</option>
-                    <option value="whisper:medium">Whisper · точно</option>
-                    <option value="whisper:large-v3-turbo">Whisper · максимум</option>
+                  <optgroup label="Whisper — multilingual">
+                    <option value="whisper:base">Whisper · fast</option>
+                    <option value="whisper:small">Whisper · balanced</option>
+                    <option value="whisper:medium">Whisper · accurate</option>
+                    <option value="whisper:large-v3-turbo">Whisper · maximum</option>
                   </optgroup>
-                  <optgroup label="Vosk — украинский">
-                    <option value="vosk:uk" selected>Vosk · украинский (370 МБ)</option>
-                    <option value="vosk:uk-small">Vosk · украинский, лёгкая (145 МБ)</option>
+                  <optgroup label="Vosk — Ukrainian">
+                    <option value="vosk:uk" selected>Vosk · Ukrainian (370 MB)</option>
+                    <option value="vosk:uk-small">Vosk · Ukrainian, light (145 MB)</option>
                   </optgroup>
                 </select>
               </label>
             </div>
-            <label id="stt-prompt-box">Подсказка <span class="muted small">(текст сценария, имена, термины — необязательно)</span>
-              <textarea id="stt-prompt" rows="2" placeholder="Например: Гармаш, нейросети, Reels"></textarea>
+            <label id="stt-prompt-box">Prompt <span class="muted small">(script text, names, terms — optional)</span>
+              <textarea id="stt-prompt" rows="2" placeholder="e.g. Kubernetes, neural networks, Reels"></textarea>
             </label>
-            <button id="btn-stt" class="btn primary wide">Распознать речь</button>
+            <button id="btn-stt" class="btn primary wide">Transcribe speech</button>
             <div id="stt-progress" class="job" hidden>
               <div class="progress"><div></div></div>
               <div class="small muted job-msg"></div>
             </div>
-            <p id="stt-note" class="small muted">Первый запуск скачивает модель распознавания — это может занять пару минут.</p>
+            <p id="stt-note" class="small muted">The first run downloads the speech model — this may take a couple of minutes.</p>
           </div>
 
           <div id="text-tools" class="card compact" hidden>
             <div class="row wrap">
-              <label class="inline">Слов в подписи <input id="chunk-words" type="number" min="1" max="20" value="4"></label>
-              <label class="inline">Символов <input id="chunk-chars" type="number" min="5" max="80" value="22"></label>
-              <button id="btn-rechunk" class="btn small">Разбить заново</button>
+              <label class="inline">Words per caption <input id="chunk-words" type="number" min="1" max="20" value="4"></label>
+              <label class="inline">Characters <input id="chunk-chars" type="number" min="5" max="80" value="22"></label>
+              <button id="btn-rechunk" class="btn small">Re-split</button>
             </div>
             <div class="row wrap">
-              <span class="small muted">Сдвиг всех:</span>
-              <button class="btn small" data-shift="-0.1">−0.1 с</button>
-              <button class="btn small" data-shift="0.1">+0.1 с</button>
+              <span class="small muted">Shift all:</span>
+              <button class="btn small" data-shift="-0.1">−0.1 s</button>
+              <button class="btn small" data-shift="0.1">+0.1 s</button>
               <div class="spacer"></div>
-              <button id="btn-add-cap" class="btn small">＋ Подпись</button>
-              <button id="btn-restt" class="btn small ghost">Распознать заново</button>
+              <button id="btn-add-cap" class="btn small">＋ Caption</button>
+              <button id="btn-restt" class="btn small ghost">Transcribe again</button>
             </div>
             <div class="row">
-              <input id="find" placeholder="Найти" class="grow">
-              <input id="replace" placeholder="Заменить на" class="grow">
-              <button id="btn-replace" class="btn small">Заменить все</button>
+              <input id="find" placeholder="Find" class="grow">
+              <input id="replace" placeholder="Replace with" class="grow">
+              <button id="btn-replace" class="btn small">Replace all</button>
             </div>
           </div>
 
           <div id="captions" class="captions"></div>
         </div>
 
-        <!-- ---------- Стиль ---------- -->
+        <!-- ---------- Style ---------- -->
         <div class="tab" data-tab="style" hidden>
           <div id="presets" class="presets"></div>
-          <h4 class="group-title">Микс шрифтов · слова появляются по мере речи</h4>
+          <h4 class="group-title">Font mix · words appear as they are spoken</h4>
           <div id="combos" class="presets"></div>
 
           <div id="combo-editor" class="card combo-editor" hidden>
-            <h3 id="ce-title">Свой стиль</h3>
-            <label>Название <input id="ce-name" maxlength="40" placeholder="Мой стиль"></label>
+            <h3 id="ce-title">Custom style</h3>
+            <label>Name <input id="ce-name" maxlength="40" placeholder="My style"></label>
             <div class="seg" id="ce-layout">
-              <button data-v="stack">По строкам</button>
-              <button data-v="accent">Акцент на слове</button>
+              <button data-v="stack">Line by line</button>
+              <button data-v="accent">Accent word</button>
             </div>
             <p id="ce-layout-hint" class="small muted"></p>
             <div class="ce-role" data-role="0">
-              <div class="ce-role-title">Основной шрифт</div>
+              <div class="ce-role-title">Main font</div>
               <div class="font-picker ce-font"></div>
-              <div class="slider"><span>Размер</span><input class="ce-size" type="range" min="0.5" max="2.5" step="0.05"><output></output></div>
-              <div class="slider"><span>Разрядка</span><input class="ce-spacing" type="range" min="0" max="0.4" step="0.01"><output></output></div>
+              <div class="slider"><span>Size</span><input class="ce-size" type="range" min="0.5" max="2.5" step="0.05"><output></output></div>
+              <div class="slider"><span>Letter spacing</span><input class="ce-spacing" type="range" min="0" max="0.4" step="0.01"><output></output></div>
               <div class="seg small ce-case">
-                <button data-v="">Как есть</button><button data-v="upper">ЗАГЛАВНЫЕ</button><button data-v="lower">строчные</button>
+                <button data-v="">As is</button><button data-v="upper">UPPERCASE</button><button data-v="lower">lowercase</button>
               </div>
             </div>
             <div class="ce-role" data-role="1">
-              <div class="ce-role-title">Второй шрифт</div>
+              <div class="ce-role-title">Second font</div>
               <div class="font-picker ce-font"></div>
-              <div class="slider"><span>Размер</span><input class="ce-size" type="range" min="0.5" max="2.5" step="0.05"><output></output></div>
-              <div class="slider"><span>Разрядка</span><input class="ce-spacing" type="range" min="0" max="0.4" step="0.01"><output></output></div>
+              <div class="slider"><span>Size</span><input class="ce-size" type="range" min="0.5" max="2.5" step="0.05"><output></output></div>
+              <div class="slider"><span>Letter spacing</span><input class="ce-spacing" type="range" min="0" max="0.4" step="0.01"><output></output></div>
               <div class="seg small ce-case">
-                <button data-v="">Как есть</button><button data-v="upper">ЗАГЛАВНЫЕ</button><button data-v="lower">строчные</button>
+                <button data-v="">As is</button><button data-v="upper">UPPERCASE</button><button data-v="lower">lowercase</button>
               </div>
-              <label class="check"><input class="ce-accent" type="checkbox"> Вторым цветом</label>
+              <label class="check"><input class="ce-accent" type="checkbox"> Second color</label>
               <div class="ce-fx">
-                <div class="ce-role-title">Эффект</div>
+                <div class="ce-role-title">Effect</div>
                 <div class="chips-grid ce-fx-type">
-                  <button data-v="">Нет</button><button data-v="glow">Свечение</button><button data-v="shadow">Тень</button>
-                  <button data-v="outline">Обводка</button><button data-v="marker">Маркер</button><button data-v="underline">Подчёркивание</button>
-                  <button data-v="sparkle">✦ Блёстки</button><button data-v="hearts">♥ Сердечки</button><button data-v="confetti">Конфетти</button>
-                  <button data-v="fireflies">Огоньки</button><button data-v="bubbles">Пузырьки</button><button data-v="snow">❄ Снег</button>
-                  <button data-v="burst">Вспышка</button>
+                  <button data-v="">None</button><button data-v="glow">Glow</button><button data-v="shadow">Shadow</button>
+                  <button data-v="outline">Outline</button><button data-v="marker">Marker</button><button data-v="underline">Underline</button>
+                  <button data-v="sparkle">✦ Sparkles</button><button data-v="hearts">♥ Hearts</button><button data-v="confetti">Confetti</button>
+                  <button data-v="fireflies">Fireflies</button><button data-v="bubbles">Bubbles</button><button data-v="snow">❄ Snow</button>
+                  <button data-v="burst">Burst</button>
                 </div>
                 <div class="ce-fx-opts">
                   <div class="row">
-                    <label class="inline">Цвет <input class="ce-fx-color" type="color"></label>
+                    <label class="inline">Color <input class="ce-fx-color" type="color"></label>
                   </div>
-                  <div class="slider"><span class="ce-fx-strength-label">Сила</span><input class="ce-fx-strength" type="range" min="1" max="10" step="1"><output></output></div>
+                  <div class="slider"><span class="ce-fx-strength-label">Strength</span><input class="ce-fx-strength" type="range" min="1" max="10" step="1"><output></output></div>
                 </div>
-                <div class="ce-role-title">Анимация</div>
+                <div class="ce-role-title">Animation</div>
                 <div class="chips-grid ce-anim-type">
-                  <button data-v="">Нет</button><button data-v="pulse">Пульсация</button><button data-v="float">Волна</button>
-                  <button data-v="swing">Качание</button><button data-v="shake">Дрожание</button><button data-v="flicker">Мерцание</button>
-                  <button data-v="rainbow">Радуга</button><button data-v="bounce">Пружина</button><button data-v="glowpulse">Пульс свечения</button>
+                  <button data-v="">None</button><button data-v="pulse">Pulse</button><button data-v="float">Wave</button>
+                  <button data-v="swing">Swing</button><button data-v="shake">Shake</button><button data-v="flicker">Flicker</button>
+                  <button data-v="rainbow">Rainbow</button><button data-v="bounce">Bounce</button><button data-v="glowpulse">Glow pulse</button>
                 </div>
                 <div class="ce-anim-opts">
-                  <div class="slider"><span>Сила</span><input class="ce-anim-strength" type="range" min="1" max="10" step="1"><output></output></div>
-                  <div class="slider"><span>Скорость</span><input class="ce-anim-speed" type="range" min="1" max="10" step="1"><output></output></div>
+                  <div class="slider"><span>Strength</span><input class="ce-anim-strength" type="range" min="1" max="10" step="1"><output></output></div>
+                  <div class="slider"><span>Speed</span><input class="ce-anim-speed" type="range" min="1" max="10" step="1"><output></output></div>
                 </div>
               </div>
             </div>
             <div class="colors two">
-              <label>Основной цвет <input id="ce-color" type="color"></label>
-              <label>Второй цвет <input id="ce-color2" type="color"></label>
+              <label>Main color <input id="ce-color" type="color"></label>
+              <label>Second color <input id="ce-color2" type="color"></label>
             </div>
             <div class="row">
-              <button id="ce-save" class="btn primary grow">Сохранить</button>
-              <button id="ce-cancel" class="btn">Отмена</button>
-              <button id="ce-delete" class="btn ghost danger" title="Удалить стиль">Удалить</button>
+              <button id="ce-save" class="btn primary grow">Save</button>
+              <button id="ce-cancel" class="btn">Cancel</button>
+              <button id="ce-delete" class="btn ghost danger" title="Delete style">Delete</button>
             </div>
           </div>
           <div class="card">
-            <label data-for="font">Шрифт <select id="st-font"></select></label>
-            <div class="slider"><span>Размер</span><input id="st-fontSize" type="range" min="2.5" max="14" step="0.1"><output></output></div>
-            <label class="check"><input id="st-uppercase" type="checkbox"> ЗАГЛАВНЫЕ БУКВЫ</label>
-            <label class="check" data-for="reveal"><input id="st-reveal" type="checkbox"> Слова появляются по мере речи</label>
+            <label data-for="font">Font <select id="st-font"></select></label>
+            <div class="slider"><span>Size</span><input id="st-fontSize" type="range" min="2.5" max="14" step="0.1"><output></output></div>
+            <label class="check"><input id="st-uppercase" type="checkbox"> UPPERCASE</label>
+            <label class="check" data-for="reveal"><input id="st-reveal" type="checkbox"> Words appear as they are spoken</label>
           </div>
           <div class="card">
             <div class="colors">
-              <label data-for="color">Текст <input id="st-color" type="color"></label>
-              <label data-for="highlightColor">Акцент <input id="st-highlightColor" type="color"></label>
-              <label data-for="outlineColor">Обводка <input id="st-outlineColor" type="color"></label>
-              <label data-for="boxColor">Подложка <input id="st-boxColor" type="color"></label>
+              <label data-for="color">Text <input id="st-color" type="color"></label>
+              <label data-for="highlightColor">Accent <input id="st-highlightColor" type="color"></label>
+              <label data-for="outlineColor">Outline <input id="st-outlineColor" type="color"></label>
+              <label data-for="boxColor">Background <input id="st-boxColor" type="color"></label>
             </div>
-            <div class="slider" data-for="outline"><span>Обводка</span><input id="st-outline" type="range" min="0" max="20" step="0.5"><output></output></div>
-            <div class="slider" data-for="shadow"><span>Тень</span><input id="st-shadow" type="range" min="0" max="20" step="0.5"><output></output></div>
-            <div class="slider" data-for="boxOpacity"><span>Прозрачность подложки</span><input id="st-boxOpacity" type="range" min="0" max="1" step="0.05"><output></output></div>
-            <div class="slider" data-for="wordScale"><span>Увеличение слова</span><input id="st-wordScale" type="range" min="1" max="1.5" step="0.01"><output></output></div>
+            <div class="slider" data-for="outline"><span>Outline</span><input id="st-outline" type="range" min="0" max="20" step="0.5"><output></output></div>
+            <div class="slider" data-for="shadow"><span>Shadow</span><input id="st-shadow" type="range" min="0" max="20" step="0.5"><output></output></div>
+            <div class="slider" data-for="boxOpacity"><span>Background opacity</span><input id="st-boxOpacity" type="range" min="0" max="1" step="0.05"><output></output></div>
+            <div class="slider" data-for="wordScale"><span>Word scale</span><input id="st-wordScale" type="range" min="1" max="1.5" step="0.01"><output></output></div>
           </div>
           <div class="card">
-            <p class="small muted">Текст можно перетаскивать прямо на видео.</p>
-            <div class="slider"><span>По горизонтали</span><input id="st-x" type="range" min="5" max="95" step="0.5"><output></output></div>
-            <div class="slider"><span>Положение снизу</span><input id="st-position" type="range" min="2" max="90" step="1"><output></output></div>
-            <div class="slider" data-for="lineSpacing"><span>Межстрочный интервал</span><input id="st-lineSpacing" type="range" min="0.6" max="2" step="0.05"><output></output></div>
-            <div class="slider"><span>Ширина блока</span><input id="st-maxWidth" type="range" min="30" max="100" step="1"><output></output></div>
-            <label data-for="animation">Появление
+            <p class="small muted">You can drag the text right on the video.</p>
+            <div class="slider"><span>Horizontal</span><input id="st-x" type="range" min="5" max="95" step="0.5"><output></output></div>
+            <div class="slider"><span>From bottom</span><input id="st-position" type="range" min="2" max="90" step="1"><output></output></div>
+            <div class="slider" data-for="lineSpacing"><span>Line spacing</span><input id="st-lineSpacing" type="range" min="0.6" max="2" step="0.05"><output></output></div>
+            <div class="slider"><span>Block width</span><input id="st-maxWidth" type="range" min="30" max="100" step="1"><output></output></div>
+            <label data-for="animation">Entrance
               <select id="st-animation">
-                <option value="none">Без анимации</option>
-                <option value="pop">Пружинка</option>
-                <option value="fade">Плавно</option>
+                <option value="none">No animation</option>
+                <option value="pop">Pop</option>
+                <option value="fade">Fade</option>
               </select>
             </label>
           </div>
         </div>
 
-        <!-- ---------- Экспорт ---------- -->
+        <!-- ---------- Export ---------- -->
         <div class="tab" data-tab="export" hidden>
           <div class="card">
-            <h3>Видео с субтитрами</h3>
-            <p class="small muted">Субтитры будут вшиты в видео (MP4, H.264), качество исходника сохраняется.</p>
-            <button id="btn-render" class="btn primary wide">Создать видео</button>
+            <h3>Video with subtitles</h3>
+            <p class="small muted">Subtitles are burned into the video (MP4, H.264); source quality is preserved.</p>
+            <button id="btn-render" class="btn primary wide">Render video</button>
             <div id="render-progress" class="job" hidden>
               <div class="progress"><div></div></div>
               <div class="small muted job-msg"></div>
             </div>
             <div id="render-result" hidden>
               <video id="result-video" controls playsinline></video>
-              <a id="btn-download" class="btn primary wide" download>⬇ Скачать MP4</a>
+              <a id="btn-download" class="btn primary wide" download>⬇ Download MP4</a>
             </div>
           </div>
           <div class="card">
-            <h3>Файлы субтитров</h3>
-            <p class="small muted">Для YouTube, Premiere, CapCut, DaVinci и т.д.</p>
+            <h3>Subtitle files</h3>
+            <p class="small muted">For YouTube, Premiere, CapCut, DaVinci, etc.</p>
             <div class="row wrap">
               <button class="btn" data-dl="srt">SRT</button>
               <button class="btn" data-dl="vtt">VTT</button>
-              <button class="btn" data-dl="ass">ASS (со стилем)</button>
-              <button class="btn" data-dl="txt">Текст</button>
+              <button class="btn" data-dl="ass">ASS (styled)</button>
+              <button class="btn" data-dl="txt">Text</button>
             </div>
           </div>
         </div>

@@ -32,3 +32,7 @@ The teleprompter camera only works on `localhost` or over HTTPS (a browser restr
 - `static/` — build-free frontend: `js/overlay.js` (live preview), `js/captions.js` (caption logic), `js/app.js` (editor), `js/teleprompter.js`.
 - `fonts/` — fonts shared by the preview and the renderer.
 - `data/projects/<id>/` — source video, `project.json`, rendered output.
+
+## License
+
+[MIT](LICENSE). The bundled fonts in `fonts/` are distributed under the [SIL Open Font License 1.1](fonts/OFL.txt).

@@ -803,7 +803,13 @@ async function startTranscribe() {
       return;
     }
     commit(chunkWords(res.words, chunkOpts()));
-    toast(`Done! Words recognized: ${res.words.length}`);
+    if (res.switchedTo) {
+      const opt = $(`#stt-lang option[value="${res.switchedTo}"]`);
+      const name = opt ? opt.textContent : res.switchedTo;
+      toast(`The speech sounded like ${name}, not the chosen language — transcribed as ${name}.`);
+    } else {
+      toast(`Done! Words recognized: ${res.words.length}`);
+    }
   } catch (e) {
     toast(e.message, true);
   } finally {
@@ -820,11 +826,16 @@ function syncEngine() {
   $("#stt-prompt-box").hidden = vosk;
   $("#stt-note").textContent = vosk
     ? "Vosk outputs text without capitalization or punctuation — you can fix them in the editor. The model is downloaded on first run."
-    : "The first run downloads the speech model — this may take a couple of minutes.";
+    : $("#stt-lang").value
+      ? "The first run downloads the speech model — this may take a couple of minutes."
+      : "Ukrainian and Russian sound alike to the model — pick the language for better accuracy.";
   localStorage.setItem("stt-model", $("#stt-model").value);
 }
 $("#stt-model").onchange = syncEngine;
-$("#stt-lang").onchange = () => localStorage.setItem("stt-lang", $("#stt-lang").value);
+$("#stt-lang").onchange = () => {
+  localStorage.setItem("stt-lang", $("#stt-lang").value);
+  syncEngine();
+};
 if (localStorage.getItem("stt-model")) $("#stt-model").value = localStorage.getItem("stt-model");
 if (localStorage.getItem("stt-lang")) $("#stt-lang").value = localStorage.getItem("stt-lang");
 syncEngine();

@@ -20,7 +20,7 @@ uv pip install --python .venv -r requirements.txt
 ./run.sh                                # http://localhost:8000
 ```
 
-The speech model is downloaded on first use (Whisper small ≈ 500 MB, Vosk Ukrainian ≈ 370 MB). On CPU, the "balanced" model transcribes one minute of video in roughly one minute; an NVIDIA GPU is used automatically when available.
+The speech model is downloaded on first use (Whisper large-v3-turbo ≈ 1.6 GB, Vosk Ukrainian ≈ 370 MB). On a 12-core CPU the default "best" model transcribes a short clip in about 1.5× its length; an NVIDIA GPU is used automatically when available. Pick the spoken language explicitly — Whisper confuses Ukrainian and Russian; if the chosen language is clearly wrong, the app switches to the detected one and says so.
 
 The teleprompter camera only works on `localhost` or over HTTPS (a browser restriction). To use it from a phone on the same network, run `./run.sh --https` — it generates a self-signed certificate and serves on port 8443.
 

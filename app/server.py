@@ -248,7 +248,7 @@ def get_job(jid: str):
 
 class TranscribeRequest(BaseModel):
     engine: str = "whisper"  # whisper | vosk
-    model: str = "small"
+    model: str = "large-v3-turbo"
     language: str | None = None
     prompt: str | None = None
 

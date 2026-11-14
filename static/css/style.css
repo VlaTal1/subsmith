@@ -301,24 +301,29 @@ input[type="range"] { accent-color: var(--accent); padding: 0; border: 0; backgr
 
 /* ------------------------------------------------ mobile */
 @media (max-width: 860px) {
-  .editor { height: auto; min-height: 100dvh; }
-  .editor-body { grid-template-columns: minmax(0, 1fr); }
-  .side { min-width: 0; }
+  /* Phone editor: preview on top, the panel below scrolls on its own so the tabs stay in reach */
+  .editor-body { display: flex; flex-direction: column; }
+  .stage { flex: none; }
+  .side { flex: 1; min-height: 0; min-width: 0; border-left: 0; }
   .row { flex-wrap: wrap; }
   .transport label { display: none; }
   .topbar { height: 48px; padding: 0 8px; gap: 6px; }
-  .stage { position: sticky; top: 0; z-index: 5; }
-  /* Large preview; compact one via the size button or automatically while editing text */
-  .frame-box { flex: none; height: 64dvh; padding: 4px; transition: height .2s; }
-  .editor.compact .frame-box { height: 32dvh; }
+  /* Preview size: the size button or editing text switches to the compact one */
+  .frame-box { flex: none; height: 46dvh; padding: 4px; transition: height .2s; }
+  .editor.compact .frame-box { height: 28dvh; }
   .transport { padding: 2px 8px; }
   #btn-size { display: inline-flex; }
   .big-play { width: 48px; height: 48px; }
-  .side { border-left: 0; }
-  .tab { overflow: visible; }
   .project-name { width: 40vw; }
   #btn-export-top { padding: 0 10px; }
   .timeline { height: 62px; }
   .tl-ruler { height: 16px; }
   .tl-track { top: 20px; height: 36px; }
+  .projects { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .home { padding: 16px 12px 48px; }
+}
+
+/* Keyboard shortcuts mean nothing on touch screens */
+@media (hover: none) {
+  .keys-hint { display: none; }
 }

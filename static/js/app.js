@@ -1,6 +1,6 @@
-import {
-  BARS, DEFAULT_STYLE, PARTICLES, PRESETS, SubtitleOverlay, applyCase, comboLayout, findCaption, fxTextShadow, setStopwords,
-} from "./overlay.js";
+import { SubtitleOverlay, findCaption } from "./overlay.js";
+import { DEFAULT_STYLE, emphasisIndices, layoutAll, layoutCaption, normalizeStyle, resolveColors, setStopwords } from "./layout.js";
+import { LOOKS, analyzeVideo, getLook } from "./looks.js";
 import {
   captionText, chunkWords, flattenWords, fmtTime, mergeCaptions, parseTime,
   retimeRange, retimeText, shiftAll, splitCaption, toSRT, toTXT, toVTT,
@@ -61,7 +61,7 @@ async function pollJob(jobId, box) {
 }
 
 let fonts = [];
-let combos = [];
+let fontMap = {};
 async function loadFonts() {
   fonts = await api("/api/fonts");
   await Promise.all(
@@ -168,7 +168,7 @@ async function openEditor(id) {
   const p = await api(`/api/projects/${id}`);
   ed.project = p;
   ed.captions = p.captions || [];
-  ed.style = { ...DEFAULT_STYLE, ...(p.style || {}) };
+  ed.style = normalizeStyle(p.style);
   ed.selected = -1;
   ed.past = [];
   ed.future = [];
@@ -183,7 +183,9 @@ async function openEditor(id) {
   if (prompt) $("#stt-prompt").value = prompt;
   switchTab("text");
   syncStyleControls();
+  renderLooks();
   renderAll();
+  if (ed.style.autoColor && !ed.style.scene) matchVideoColors(false);
 
   const auto = location.hash.includes("auto=1");
   history.replaceState(null, "", `#/p/${id}`);
@@ -192,7 +194,6 @@ async function openEditor(id) {
 
 function closeEditor() {
   if (!ed.project) return;
-  if (ce.draft) cancelComboEditor(); // don't leave an unsaved custom style in the project
   flushSave();
   video.pause();
   video.removeAttribute("src");
@@ -282,14 +283,13 @@ function layoutFrame() {
   const frame = $("#frame");
   frame.style.width = `${w}px`;
   frame.style.height = `${h}px`;
-  overlay.configure({ style: ed.style, width: p.width, height: p.height, displayHeight: h });
   updateOverlay(true);
 }
 new ResizeObserver(layoutFrame).observe($("#frame-box"));
 
 function updateOverlay(force = false) {
   if (!ed.project) return;
-  if (force) overlay.configure({ style: ed.style, width: ed.project.width, height: ed.project.height, displayHeight: $("#frame").clientHeight });
+  if (force) overlay.configure({ style: ed.style, width: ed.project.width, height: ed.project.height });
   overlay.update(ed.captions, video.currentTime);
 }
 
@@ -371,48 +371,57 @@ $("#btn-move-mode").onclick = () => {
   toast(moveOne ? "Dragging moves only the current caption" : "Dragging moves all captions");
 };
 
+// Anchor of caption i in % of the frame: its own position, or the look's slot moved by the global offset
+function anchorOf(i) {
+  const cap = ed.captions[i];
+  if (cap.pos) return { ...cap.pos };
+  const slots = getLook(ed.style.look).place.slots;
+  const slot = slots[i % slots.length];
+  return { x: slot.x + ed.style.offset.x, y: slot.y + ed.style.offset.y };
+}
+
 $("#sub-layer").addEventListener("pointerdown", (e) => {
   const block = e.target.closest(".sub-block");
-  const idx = findCaption(ed.captions, video.currentTime);
-  if (!block || idx < 0 || !block.childElementCount) return;
+  if (!block) return;
+  const idx = +block.dataset.i;
+  const cap = ed.captions[idx];
+  if (!cap) return;
   e.preventDefault();
   const frame = $("#frame").getBoundingClientRect();
-  const cap = ed.captions[idx];
   // A caption with its own position always moves on its own; otherwise per the toggle mode
   const own = moveOne || !!cap.pos;
-  const start = own && cap.pos ? { ...cap.pos } : { x: ed.style.x, y: ed.style.position };
-  const blockH = (block.offsetHeight / frame.height) * 100;
+  const start = anchorOf(idx);
+  const offset0 = { ...ed.style.offset };
   const before = JSON.stringify(ed.captions);
   const x0 = e.clientX, y0 = e.clientY;
   let moved = false;
-  block.setPointerCapture(e.pointerId);
+  const layer = $("#sub-layer");
+  layer.setPointerCapture(e.pointerId);
   block.classList.add("dragging");
 
-  block.onpointermove = (ev) => {
+  layer.onpointermove = (ev) => {
     if (!moved && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 4) return;
     moved = true;
-    let x = start.x + ((ev.clientX - x0) / frame.width) * 100;
-    let y = start.y - ((ev.clientY - y0) / frame.height) * 100;
-    x = Math.max(5, Math.min(95, x));
-    y = Math.max(0, Math.min(100 - blockH, y));
-    const snap = Math.abs(x - 50) < 2.5;
+    const dx = ((ev.clientX - x0) / frame.width) * 100;
+    const dy = -((ev.clientY - y0) / frame.height) * 100;
+    let x = Math.max(0, Math.min(100, start.x + dx));
+    const y = Math.round(Math.max(0, Math.min(98, start.y + dy)) * 10) / 10;
+    const snap = Math.abs(x - 50) < 2.5 && getLook(ed.style.look).place.slots[0].align === "center";
     if (snap) x = 50;
     $("#snap-guide").hidden = !snap;
     x = Math.round(x * 10) / 10;
-    y = Math.round(y * 10) / 10;
     if (own) {
       const caps = ed.captions.slice();
       caps[idx] = { ...ed.captions[idx], pos: { x, y } };
       ed.captions = caps;
     } else {
-      ed.style = { ...ed.style, x, position: y };
-      syncStyleControls();
+      ed.style = { ...ed.style, offset: { x: Math.round((offset0.x + x - start.x) * 10) / 10, y: Math.round((offset0.y + y - start.y) * 10) / 10 } };
     }
     updateOverlay(true);
   };
-  block.onpointerup = block.onpointercancel = () => {
-    block.onpointermove = block.onpointerup = block.onpointercancel = null;
-    block.classList.remove("dragging");
+  layer.onpointerup = layer.onpointercancel = () => {
+    layer.onpointermove = layer.onpointerup = layer.onpointercancel = null;
+    $$(".sub-block.dragging").forEach((b) => b.classList.remove("dragging"));
     $("#snap-guide").hidden = true;
     if (!moved) return;
     // A click after dragging must not toggle play/pause
@@ -631,39 +640,28 @@ function renderCaptionList() {
   if (focused != null) $(`.cap[data-i="${focused}"] textarea`)?.focus();
 }
 
-// Caption words as "chips" in the combo style's fonts. Clicking a word:
-// in an accent style toggles the accent, in a stack style toggles a line break before it.
-function currentCombo() {
-  if (ed.style.preset !== "combo") return null;
-  return combos.find((c) => c.id === ed.style.combo) || ed.style.comboDef || combos[0];
-}
-
+// Caption words as "chips": click marks the accent word, Shift+click starts a new line at the word
 function renderChips(box, i) {
-  const combo = currentCombo();
-  box.hidden = !combo;
-  if (!combo) return;
   const cap = ed.captions[i];
-  const layout = comboLayout(combo, cap.words);
-  const accent = combo.layout === "accent";
-  const manual = cap.words.some((w, j) => (accent ? w.em : j > 0 && w.br));
+  box.hidden = !cap.words.length;
+  if (!cap.words.length) return;
+  const em = emphasisIndices(cap.words);
+  const manual = cap.words.some((w, j) => w.em || (j > 0 && w.br));
   box.innerHTML = "";
   cap.words.forEach((w, j) => {
-    const [role, newLine, roleIdx] = layout[j];
-    if (newLine) box.insertAdjacentHTML("beforeend", `<span class="chip-br" title="New line">${icon("corner-down-left")}</span>`);
+    if (j > 0 && w.br) box.insertAdjacentHTML("beforeend", `<span class="chip-br" title="New line">${icon("corner-down-left")}</span>`);
     const chip = document.createElement("button");
-    chip.className = `chip role-${roleIdx}`;
-    chip.textContent = applyCase(w.text, role.case, ed.style.uppercase);
-    chip.style.fontFamily = `"sub-${role.font}", sans-serif`;
-    chip.title = accent ? "Toggle accent" : j === 0 ? "The first word always starts a line" : "Start a line at this word / remove the break";
-    chip.disabled = !accent && j === 0;
-    chip.onclick = () => toggleChip(i, j, accent, layout);
+    chip.className = "chip" + (em.has(j) ? " role-1" : "");
+    chip.textContent = w.text;
+    chip.title = "Click: accent word · Shift+click: start a new line here";
+    chip.onclick = (e) => toggleChip(i, j, e.shiftKey);
     box.appendChild(chip);
   });
   if (manual) {
     const reset = document.createElement("button");
     reset.className = "btn ghost small chip-reset";
     reset.textContent = "Auto";
-    reset.title = "Restore automatic layout";
+    reset.title = "Restore automatic accent and lines";
     reset.onclick = () => {
       const caps = ed.captions.slice();
       caps[i] = { ...cap, words: cap.words.map(({ em, br, ...w }) => w) };
@@ -673,17 +671,16 @@ function renderChips(box, i) {
   }
 }
 
-function toggleChip(i, j, accent, layout) {
+function toggleChip(i, j, lineBreak) {
   const cap = ed.captions[i];
-  let words = cap.words.map((w) => ({ ...w }));
-  if (accent) {
+  const words = cap.words.map((w) => ({ ...w }));
+  if (lineBreak) {
+    if (j === 0) return;
+    if (words[j].br) delete words[j].br; else words[j].br = true;
+  } else {
     // The first click replaces the automatic accent with the chosen word
     if (!words.some((w) => w.em)) words.forEach((w) => delete w.em);
     if (words[j].em) delete words[j].em; else words[j].em = true;
-  } else {
-    // The first click freezes the current automatic breaks; edits apply on top of them
-    if (!words.some((w, k) => k > 0 && w.br)) layout.forEach(([, nl], k) => nl && (words[k].br = true));
-    if (words[j].br) delete words[j].br; else words[j].br = true;
   }
   const caps = ed.captions.slice();
   caps[i] = { ...cap, words };
@@ -830,412 +827,170 @@ syncEngine();
 
 // ------------------------------------------------------------------ style
 
-const STYLE_FIELDS = ["font", "fontSize", "uppercase", "color", "highlightColor", "outlineColor", "boxColor",
-  "outline", "shadow", "boxOpacity", "wordScale", "position", "x", "maxWidth", "lineSpacing", "animation", "reveal"];
-
-const VISIBLE = {
-  font: ["highlight", "wordbox", "karaoke", "pop", "classic", "box"],
-  reveal: ["highlight", "wordbox", "classic", "box"],
-  highlightColor: ["highlight", "wordbox", "karaoke", "combo"],
-  outlineColor: ["highlight", "karaoke", "pop", "classic", "combo"],
-  outline: ["highlight", "karaoke", "pop", "classic", "combo"],
-  shadow: ["highlight", "karaoke", "pop", "classic"],
-  boxColor: ["box"],
-  boxOpacity: ["box"],
-  wordScale: ["highlight", "wordbox"],
-  animation: ["highlight", "wordbox", "karaoke", "classic", "box", "combo"],
-  lineSpacing: ["highlight", "wordbox", "karaoke", "classic", "combo"],
-};
-
-function fmtOut(key, v) {
-  if (key === "boxOpacity") return `${Math.round((1 - v) * 100)}%`;
-  if (key === "wordScale") return `${Math.round(v * 100)}%`;
-  if (key === "position" || key === "maxWidth") return `${v}%`;
-  if (key === "lineSpacing") return `${Math.round(v * 100)}%`;
-  if (key === "x") return v == 50 ? "center" : `${Math.round(v)}%`;
-  return String(v);
-}
-
-function syncStyleControls() {
-  const s = ed.style;
-  const sel = $("#st-font");
-  if (!sel.options.length) {
-    for (const f of fonts) {
-      const o = new Option(f.name, f.name);
-      o.style.fontFamily = `"sub-${f.name}"`;
-      sel.add(o);
-    }
-  }
-  for (const k of STYLE_FIELDS) {
-    const el = $(`#st-${k}`);
-    if (el.type === "checkbox") el.checked = !!s[k];
-    else el.value = s[k];
-    const out = el.parentElement.querySelector("output");
-    if (out) out.textContent = fmtOut(k, s[k]);
-  }
-  sel.style.fontFamily = `"sub-${s.font}"`;
-  for (const [k, presets] of Object.entries(VISIBLE)) {
-    $$(`[data-for="${k}"]`).forEach((el) => (el.hidden = !presets.includes(s.preset)));
-  }
-  const activeId = s.preset === "combo" ? `combo:${s.combo}` : s.preset;
-  $$(".preset").forEach((el) => el.classList.toggle("active", el.dataset.id === activeId));
-  $("#st-outline").closest(".slider").querySelector("span").textContent = s.preset === "combo" ? "Shadow around" : "Outline";
-  $('[data-for="highlightColor"]').firstChild.textContent = s.preset === "combo" ? "Second color " : "Accent ";
-}
-
 function setStyle(patch) {
-  const prevLayout = `${ed.style.preset}:${ed.style.combo}:${ed.style.uppercase}`;
+  const recolor = "scene" in patch || "autoColor" in patch;
   ed.style = { ...ed.style, ...patch };
-  if (`${ed.style.preset}:${ed.style.combo}:${ed.style.uppercase}` !== prevLayout) renderCaptionList();
+  if (recolor) renderLooks();
   syncStyleControls();
   updateOverlay(true);
   scheduleSave();
 }
 
-for (const k of STYLE_FIELDS) {
-  const el = $(`#st-${k}`);
-  el.addEventListener("input", () => {
-    const v = el.type === "checkbox" ? el.checked : el.type === "range" ? +el.value : el.value;
-    setStyle({ [k]: v });
-  });
-}
-
-function renderPresets() {
-  const box = $("#presets");
-  for (const p of PRESETS) {
+function syncStyleControls() {
+  const s = ed.style;
+  const look = getLook(s.look);
+  const colors = resolveColors(look, s);
+  $$(".look").forEach((el) => el.classList.toggle("active", el.dataset.id === look.id));
+  $("#st-auto").checked = !!s.autoColor;
+  $("#st-auto-note").textContent = s.autoColor
+    ? (s.scene ? "The accent color is picked to stand out from this video." : "Reading the video's colors…")
+    : "Colors are set by hand.";
+  $("#st-main").value = colors.main.toLowerCase();
+  $("#st-accent").value = colors.accent.toLowerCase();
+  const sw = $("#st-swatches");
+  sw.innerHTML = "";
+  for (const c of look.accents) {
     const b = document.createElement("button");
-    b.className = "preset";
-    b.dataset.id = p.id;
-    b.innerHTML = `<div class="pv pv-${p.id}"><span>Your</span> <span class="on">words</span></div><div class="pn">${p.name}</div>`;
-    b.onclick = () => setStyle(p.style);
-    box.appendChild(b);
+    b.className = "swatch" + (c.toLowerCase() === colors.accent.toLowerCase() ? " on" : "");
+    b.style.setProperty("--c", c);
+    b.title = c;
+    b.onclick = () => setStyle({ autoColor: false, colors: { main: colors.main, accent: c } });
+    sw.appendChild(b);
   }
+  $("#st-size").value = s.size;
+  $("#st-size").nextElementSibling.textContent = `${Math.round(s.size * 100)}%`;
+  $("#st-entrance").value = s.entrance || "";
+  $("#st-reset-pos").disabled = !s.offset.x && !s.offset.y && !ed.captions.some((c) => c.pos);
 }
 
-// Combo style cards: the sample is set in the template's own fonts
-function comboCardPreview(c) {
-  const pv = document.createElement("div");
-  pv.className = "pv pv-combo";
-  const roles = c.layout === "accent" ? [c.roles[0], c.roles[1], c.roles[0]] : [c.roles[0], ...c.roles.slice(1), c.roles[c.roles.length - 1]].slice(0, 3);
-  ["Your", "bright", "words"].forEach((word, i) => {
-    const r = roles[i % roles.length];
-    const sp = document.createElement("span");
-    sp.textContent = applyCase(word, r.case, false);
-    sp.style.fontFamily = `"sub-${r.font}"`;
-    sp.style.fontSize = `${Math.min(26, 14 * (r.size ?? 1))}px`;
-    sp.style.color = r.color === "accent" ? c.style.highlightColor : c.style.color;
-    if (r.spacing) sp.style.letterSpacing = `${r.spacing}em`;
-    const fxShadow = fxTextShadow(r.fx, 0.35);
-    if (fxShadow) sp.style.textShadow = fxShadow;
-    if (FX_BADGE[r.fx?.type]) sp.dataset.sparkle = FX_BADGE[r.fx.type];
-    if (r.fx?.type === "marker") sp.style.background = `linear-gradient(transparent 55%, ${r.fx.color}99 55%)`;
-    if (r.fx?.type === "underline") sp.style.textDecoration = `underline ${r.fx.color}`;
-    if (r.anim?.type) sp.classList.add("card-anim", `card-anim-${r.anim.type}`);
-    pv.appendChild(sp);
-  });
-  return pv;
-}
-
-function applyCombo(c) {
-  setStyle({ preset: "combo", combo: c.id, comboDef: c.custom ? c : null, uppercase: false, animation: "none", ...c.style });
-}
-
-function renderCombos() {
-  const box = $("#combos");
-  box.innerHTML = "";
-  for (const c of combos) {
-    const b = document.createElement("button");
-    b.className = "preset";
-    b.dataset.id = `combo:${c.id}`;
-    b.appendChild(comboCardPreview(c));
-    const pn = document.createElement("div");
-    pn.className = "pn";
-    pn.textContent = c.name;
-    b.appendChild(pn);
-    b.onclick = () => applyCombo(c);
-    if (c.custom) {
-      const edit = document.createElement("span");
-      edit.className = "p-edit";
-      edit.title = "Edit style";
-      edit.innerHTML = icon("pencil");
-      edit.onclick = (e) => { e.stopPropagation(); openComboEditor(c); };
-      b.appendChild(edit);
-    }
-    box.appendChild(b);
+$("#st-auto").onchange = (e) => {
+  if (e.target.checked) {
+    setStyle({ autoColor: true, colors: null });
+    if (!ed.style.scene) matchVideoColors(true);
+  } else {
+    const look = getLook(ed.style.look);
+    setStyle({ autoColor: false, colors: resolveColors(look, ed.style) });
   }
-  const add = document.createElement("button");
-  add.className = "preset preset-add";
-  add.innerHTML = `<span class="plus">${icon("plus")}</span><span class="pn">Custom style</span>`;
-  add.onclick = () => openComboEditor(null);
-  box.appendChild(add);
-  syncStyleControls();
-}
-
-// ------------------------------------------------------------------ custom style builder
-
-const ce = { draft: null, saved: null, prevStyle: null };
-const FX_STRENGTH_LABEL = {
-  glow: "Strength", shadow: "Offset", outline: "Thickness", sparkle: "Amount", hearts: "Amount", confetti: "Amount",
-  fireflies: "Amount", bubbles: "Amount", snow: "Amount", burst: "Rays", marker: "Intensity", underline: "Thickness",
 };
-// Default effect color; null — the style's second color
-const FX_DEFAULT_COLOR = {
-  sparkle: "#FFFFFF", hearts: "#FF4D8D", fireflies: "#FFD27A", bubbles: "#9BE7FF", snow: "#FFFFFF", confetti: "#FFFFFF",
-};
-const FX_BADGE = { sparkle: "✦", hearts: "♥", confetti: "⁂", fireflies: "•", bubbles: "○", snow: "❄", burst: "✺" };
-const LAYOUT_HINT = {
-  stack: "The caption is split into two lines: the first in the main font, the second in the second font.",
-  accent: "Words use the main font and the key word uses the second one. Pick the accent by clicking a word on the Text tab.",
-};
-
-function upsertCombo(c) {
-  const i = combos.findIndex((x) => x.id === c.id);
-  if (i >= 0) combos[i] = c; else combos.push(c);
-  overlay.setCombos(combos);
-}
-
-function openComboEditor(combo) {
-  if (ce.draft) cancelComboEditor();
-  ce.saved = combo ? structuredClone(combo) : null;
-  ce.prevStyle = { ...ed.style };
-  ce.draft = combo ? structuredClone(combo) : {
-    id: `custom-${Math.random().toString(36).slice(2, 10)}`,
-    name: "",
-    layout: "stack",
-    roles: [
-      { font: "Montserrat", size: 1.25, case: "upper" },
-      { font: "Marck Script", size: 1.35, color: "accent", case: "lower" },
-    ],
-    style: { color: "#FFFFFF", highlightColor: "#FFE45C", fontSize: 5.0, outline: 4 },
-    custom: true,
-  };
-  $("#ce-title").textContent = combo ? "Edit style" : "New style";
-  $("#ce-delete").hidden = !combo;
-  $("#combo-editor").hidden = false;
-  fillComboEditor();
-  // size and outline come from the style; they can then be tweaked with the regular sliders below
-  ed.style = { ...ed.style, fontSize: ce.draft.style.fontSize, outline: ce.draft.style.outline, lineSpacing: ce.draft.style.lineSpacing ?? 1 };
-  applyDraft();
-  renderCombos();
-  $("#combo-editor").scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function fillComboEditor() {
-  const d = ce.draft;
-  $("#ce-name").value = d.name;
-  $$("#ce-layout button").forEach((b) => b.classList.toggle("on", b.dataset.v === d.layout));
-  $("#ce-layout-hint").textContent = LAYOUT_HINT[d.layout];
-  $$(".ce-role").forEach((box) => {
-    const r = d.roles[+box.dataset.role];
-    renderFontPicker($(".ce-font", box), r);
-    $(".ce-size", box).value = r.size ?? 1;
-    $(".ce-size", box).nextElementSibling.textContent = `${Math.round((r.size ?? 1) * 100)}%`;
-    $(".ce-spacing", box).value = r.spacing ?? 0;
-    $(".ce-spacing", box).nextElementSibling.textContent = r.spacing ? `${Math.round(r.spacing * 100)}%` : "none";
-    $$(".ce-case button", box).forEach((b) => b.classList.toggle("on", b.dataset.v === (r.case || "")));
-    const acc = $(".ce-accent", box);
-    if (acc) acc.checked = r.color === "accent";
-    const fxBox = $(".ce-fx", box);
-    if (fxBox) {
-      const type = r.fx?.type || "";
-      $$(".ce-fx-type button", fxBox).forEach((b) => b.classList.toggle("on", b.dataset.v === type));
-      $(".ce-fx-opts", fxBox).hidden = !type;
-      if (type) {
-        $(".ce-fx-color", fxBox).value = r.fx.color;
-        $(".ce-fx-strength", fxBox).value = r.fx.strength;
-        $(".ce-fx-strength", fxBox).nextElementSibling.textContent = r.fx.strength;
-        $(".ce-fx-strength-label", fxBox).textContent = FX_STRENGTH_LABEL[type];
-        $(".ce-fx-color", fxBox).closest(".row").hidden = type === "confetti"; // confetti has its own palette
-      }
-      const an = r.anim?.type || "";
-      $$(".ce-anim-type button", fxBox).forEach((b) => b.classList.toggle("on", b.dataset.v === an));
-      $(".ce-anim-opts", fxBox).hidden = !an;
-      if (an) {
-        $(".ce-anim-strength", fxBox).value = r.anim.strength;
-        $(".ce-anim-strength", fxBox).nextElementSibling.textContent = r.anim.strength;
-        $(".ce-anim-speed", fxBox).value = r.anim.speed;
-        $(".ce-anim-speed", fxBox).nextElementSibling.textContent = r.anim.speed;
-      }
-    }
+for (const key of ["main", "accent"]) {
+  $(`#st-${key}`).addEventListener("input", (e) => {
+    const colors = resolveColors(getLook(ed.style.look), ed.style);
+    setStyle({ autoColor: false, colors: { ...colors, [key]: e.target.value.toUpperCase() } });
   });
-  $("#ce-color").value = d.style.color;
-  $("#ce-color2").value = d.style.highlightColor;
 }
-
-// Font picker with samples: on phones a plain <select> renders every font the same
-const FONT_GROUPS = [
-  ["Sans serif", ["Montserrat", "Montserrat SemiBold", "Inter", "Roboto", "Rubik", "Comfortaa", "Unbounded", "Russo One"]],
-  ["Condensed", ["Oswald", "PT Sans Narrow"]],
-  ["Serif", ["Playfair Display", "Playfair Display Italic", "Cormorant Italic"]],
-  ["Handwritten", ["Marck Script", "Caveat", "Bad Script", "Lobster", "Great Vibes"]],
-];
-
-function fontTile(cls, name, role) {
-  const b = document.createElement("button");
-  b.type = "button";
-  b.className = cls;
-  b.dataset.font = name;
-  const sample = document.createElement("span");
-  sample.className = "fp-sample";
-  sample.textContent = applyCase("Bright words", role.case, false);
-  sample.style.fontFamily = `"sub-${name}", sans-serif`;
-  if (role.spacing) sample.style.letterSpacing = `${role.spacing}em`;
-  const label = document.createElement("span");
-  label.className = "fp-name";
-  label.textContent = name;
-  b.append(sample, label);
-  return b;
-}
-
-function renderFontPicker(picker, role) {
-  const open = picker.classList.contains("open");
-  picker.innerHTML = "";
-  const cur = fontTile("fp-current", role.font, role);
-  cur.insertAdjacentHTML("beforeend", `<span class="fp-caret">${icon("chevron-down")}</span>`);
-  picker.appendChild(cur);
-  const grid = document.createElement("div");
-  grid.className = "fp-grid";
-  const known = new Set(fonts.map((f) => f.name));
-  const grouped = new Set(FONT_GROUPS.flatMap(([, list]) => list));
-  const groups = [...FONT_GROUPS, ["Other", [...known].filter((n) => !grouped.has(n))]];
-  for (const [title, list] of groups) {
-    const names = list.filter((n) => known.has(n));
-    if (!names.length) continue;
-    grid.insertAdjacentHTML("beforeend", `<div class="fp-group">${title}</div>`);
-    for (const name of names) {
-      const t = fontTile("fp-item", name, role);
-      t.classList.toggle("on", name === role.font);
-      grid.appendChild(t);
-    }
-  }
-  picker.appendChild(grid);
-  picker.classList.toggle("open", open);
-}
-
-// The draft is shown on the video right away
-function applyDraft() {
-  upsertCombo(ce.draft);
-  setStyle({ preset: "combo", combo: ce.draft.id, comboDef: ce.draft, uppercase: false, color: ce.draft.style.color, highlightColor: ce.draft.style.highlightColor });
-  const card = $(`.preset[data-id="combo:${ce.draft.id}"]`);
-  if (card) {
-    card.querySelector(".pv").replaceWith(comboCardPreview(ce.draft));
-    card.querySelector(".pn").textContent = ce.draft.name || "New style";
-  }
-}
-
-let chipsFrame = 0;
-function editDraft(fn) {
-  fn(ce.draft);
-  fillComboEditor();
-  applyDraft();
-  // the "chips" on the Text tab use the style's fonts — refresh them (at most once per frame)
-  cancelAnimationFrame(chipsFrame);
-  chipsFrame = requestAnimationFrame(renderCaptionList);
-}
-
-$("#ce-name").oninput = (e) => editDraft((d) => (d.name = e.target.value));
-$$("#ce-layout button").forEach((b) => (b.onclick = () => editDraft((d) => (d.layout = b.dataset.v))));
-$$(".ce-role").forEach((box) => {
-  const role = (d) => d.roles[+box.dataset.role];
-  $(".ce-font", box).addEventListener("click", (e) => {
-    const item = e.target.closest(".fp-item");
-    if (item) {
-      e.currentTarget.classList.remove("open");
-      return editDraft((d) => (role(d).font = item.dataset.font));
-    }
-    if (e.target.closest(".fp-current")) {
-      const picker = e.currentTarget;
-      const open = !picker.classList.contains("open");
-      $$(".font-picker.open").forEach((p) => p.classList.remove("open"));
-      picker.classList.toggle("open", open);
-      if (open) picker.querySelector(".fp-item.on")?.scrollIntoView({ block: "nearest" });
-    }
-  });
-  $(".ce-size", box).oninput = (e) => editDraft((d) => (role(d).size = +e.target.value));
-  $(".ce-spacing", box).oninput = (e) => editDraft((d) => {
-    if (+e.target.value > 0) role(d).spacing = +e.target.value; else delete role(d).spacing;
-  });
-  $$(".ce-case button", box).forEach((b) => (b.onclick = () => editDraft((d) => {
-    if (b.dataset.v) role(d).case = b.dataset.v; else delete role(d).case;
-  })));
-  const acc = $(".ce-accent", box);
-  if (acc) acc.onchange = () => editDraft((d) => {
-    if (acc.checked) role(d).color = "accent"; else delete role(d).color;
-  });
-  const fxBox = $(".ce-fx", box);
-  if (fxBox) {
-    $$(".ce-fx-type button", fxBox).forEach((b) => (b.onclick = () => editDraft((d) => {
-      const r = role(d);
-      if (!b.dataset.v) return delete r.fx;
-      // switching effects resets to its default color; between glow/shadow/outline/marker
-      // (which use the style's second color) the chosen color is kept
-      const own = (t) => FX_DEFAULT_COLOR[t] ?? null;
-      const keep = r.fx && own(r.fx.type) === null && own(b.dataset.v) === null;
-      const color = keep ? r.fx.color : own(b.dataset.v) ?? d.style.highlightColor;
-      r.fx = { type: b.dataset.v, color, strength: r.fx?.strength ?? 5 };
-    })));
-    $(".ce-fx-color", fxBox).oninput = (e) => editDraft((d) => (role(d).fx.color = e.target.value));
-    $(".ce-fx-strength", fxBox).oninput = (e) => editDraft((d) => (role(d).fx.strength = +e.target.value));
-    $$(".ce-anim-type button", fxBox).forEach((b) => (b.onclick = () => editDraft((d) => {
-      const r = role(d);
-      if (!b.dataset.v) return delete r.anim;
-      r.anim = { type: b.dataset.v, strength: r.anim?.strength ?? 5, speed: r.anim?.speed ?? 5 };
-    })));
-    $(".ce-anim-strength", fxBox).oninput = (e) => editDraft((d) => (role(d).anim.strength = +e.target.value));
-    $(".ce-anim-speed", fxBox).oninput = (e) => editDraft((d) => (role(d).anim.speed = +e.target.value));
-  }
-});
-$("#ce-color").oninput = (e) => editDraft((d) => (d.style.color = e.target.value));
-$("#ce-color2").oninput = (e) => editDraft((d) => (d.style.highlightColor = e.target.value));
-
-function closeComboEditor() {
-  ce.draft = ce.saved = ce.prevStyle = null;
-  $("#combo-editor").hidden = true;
-  renderCombos();
-}
-
-function cancelComboEditor() {
-  const { draft, saved, prevStyle } = ce;
-  if (saved) upsertCombo(saved);
-  else combos.splice(combos.findIndex((c) => c.id === draft.id), 1);
-  overlay.setCombos(combos);
-  closeComboEditor();
-  ed.style = prevStyle;
+$("#st-size").addEventListener("input", (e) => setStyle({ size: +e.target.value }));
+$("#st-entrance").onchange = (e) => setStyle({ entrance: e.target.value || null });
+$("#st-reset-pos").onclick = () => {
+  ed.style = { ...ed.style, offset: { x: 0, y: 0 } };
+  if (ed.captions.some((c) => c.pos)) commit(ed.captions.map(({ pos, ...c }) => c));
   setStyle({});
-}
+};
 
-$("#ce-cancel").onclick = cancelComboEditor;
-
-$("#ce-save").onclick = async () => {
-  const d = ce.draft;
-  // take size and outline from the current style sliders — the user may have tweaked them
-  d.style.fontSize = ed.style.fontSize;
-  d.style.outline = ed.style.outline;
-  d.style.lineSpacing = ed.style.lineSpacing;
-  if (!d.name.trim()) d.name = "My style";
+// Dominant colors of the video decide the accent (stored in the style, so preview and export agree)
+async function matchVideoColors(announce) {
+  const p = ed.project;
   try {
-    const saved = await api(`/api/custom-combos/${d.id}`, { method: "PUT", body: d });
-    upsertCombo(saved);
-    closeComboEditor();
-    applyCombo(saved);
-    toast(`Style "${saved.name}" saved`);
-  } catch (e) {
-    toast(e.message, true);
+    const scene = await analyzeVideo(`/api/projects/${p.id}/video`, p.duration);
+    if (ed.project !== p) return;
+    setStyle({ scene });
+    if (announce) toast("Colors matched to the video");
+  } catch {
+    if (announce) toast("Could not read the video colors", true);
   }
-};
+}
 
-$("#ce-delete").onclick = async () => {
-  const d = ce.draft;
-  if (!confirm(`Delete style "${ce.saved.name}"? Projects already using it will keep it.`)) return;
-  await api(`/api/custom-combos/${d.id}`, { method: "DELETE" });
-  combos.splice(combos.findIndex((c) => c.id === d.id), 1);
-  overlay.setCombos(combos);
-  const prev = ce.prevStyle;
-  closeComboEditor();
-  ed.style = { ...prev, comboDef: prev.combo === d.id ? ce.saved ?? prev.comboDef : prev.comboDef };
-  setStyle({});
-  toast("Style deleted");
-};
+// Look cards: the look's own layout of a sample phrase, over a still from this video
+function sampleCaption(text) {
+  let t = 0;
+  const words = [];
+  for (const [li, line] of text.split("|").entries()) {
+    line.split(" ").filter(Boolean).forEach((raw, k) => {
+      const w = { text: raw.replace("*", ""), start: t, end: t + 0.3 };
+      if (raw.startsWith("*")) w.em = true;
+      if (li > 0 && k === 0) w.br = true;
+      words.push(w);
+      t += 0.3;
+    });
+  }
+  return { start: 0, end: t, words, pos: { x: 50, y: 10 } };
+}
+
+function lookPreview(look) {
+  const W = 1080, H = 1080;
+  const style = { ...ed.style, look: look.id, colors: null, size: 1, offset: { x: 0, y: 0 } };
+  const lay = layoutCaption(sampleCaption(look.sample), { style, W, H, fonts: fontMap, index: 0 });
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  const pad = 60;
+  const { x, y, w, h } = lay.box;
+  const side = Math.max(w * 0.62, h) + pad * 2; // cards are wider than tall
+  svg.setAttribute("viewBox", `${x + w / 2 - side / 1.24} ${y + h / 2 - side / 2} ${side / 0.62} ${side}`);
+  svg.setAttribute("class", "look-svg");
+  for (const wd of lay.words) {
+    const t = document.createElementNS(NS, "text");
+    t.setAttribute("x", wd.cx);
+    t.setAttribute("y", wd.y);
+    t.setAttribute("text-anchor", "middle");
+    t.setAttribute("font-family", `"sub-${wd.font}"`);
+    t.setAttribute("font-size", wd.em);
+    t.setAttribute("fill", wd.color);
+    t.setAttribute("opacity", wd.opacity);
+    if (wd.spacing) t.style.letterSpacing = `${wd.spacing}px`;
+    if (wd.halo) t.style.filter = `drop-shadow(0 0 ${wd.halo.blur * 0.5}px ${wd.halo.color})`;
+    if (wd.outline) {
+      t.setAttribute("stroke", wd.outline.color);
+      t.setAttribute("stroke-width", wd.outline.width * 2);
+      t.setAttribute("paint-order", "stroke");
+    }
+    if (wd.fx?.type === "marker") {
+      const [bx, by, bw, bh] = wd.box;
+      const r = document.createElementNS(NS, "rect");
+      Object.entries({ x: bx - bw * 0.02, y: by + 0.51 * bh, width: bw * 1.04, height: bh * 0.42, fill: wd.fx.color, opacity: 0.75 })
+        .forEach(([k, v]) => r.setAttribute(k, v));
+      svg.appendChild(r);
+    }
+    t.textContent = wd.text;
+    svg.appendChild(t);
+  }
+  return svg;
+}
+
+function renderLooks() {
+  const box = $("#looks");
+  if (!fonts.length) return;
+  box.innerHTML = "";
+  for (const look of LOOKS) {
+    const b = document.createElement("button");
+    b.className = "look" + (look.id === ed.style.look ? " active" : "");
+    b.dataset.id = look.id;
+    const pv = document.createElement("div");
+    pv.className = "look-pv";
+    pv.appendChild(lookPreview(look));
+    b.appendChild(pv);
+    const name = document.createElement("div");
+    name.className = "pn";
+    name.textContent = look.name;
+    b.appendChild(name);
+    b.onclick = () => setStyle({ look: look.id, colors: ed.style.autoColor ? null : ed.style.colors && resolveColors(look, { ...ed.style, colors: null }), entrance: null });
+    box.appendChild(b);
+  }
+  updateLookBackdrop();
+}
+
+// A frame of the video behind the look cards
+function updateLookBackdrop() {
+  if (!video.videoWidth) return;
+  try {
+    const c = document.createElement("canvas");
+    c.width = 240;
+    c.height = Math.round((240 * video.videoHeight) / video.videoWidth);
+    c.getContext("2d").drawImage(video, 0, 0, c.width, c.height);
+    $("#looks").style.setProperty("--still", `url(${c.toDataURL("image/jpeg", 0.7)})`);
+  } catch {
+    /* the still is decoration only */
+  }
+}
+video.addEventListener("loadeddata", () => setTimeout(updateLookBackdrop, 300));
 
 // ------------------------------------------------------------------ export
 
@@ -1246,49 +1001,10 @@ function showResult() {
   $("#render-result").hidden = false;
 }
 
-// With line spacing ≠ 100% the server emits each line separately, so it needs to know where
-// the preview breaks lines. We compute that in a hidden layer the same size as the preview.
-function withLines(captions, style) {
-  const f = style.lineSpacing ?? 1;
-  const needLines = !(Math.abs(f - 1) < 1e-3 || style.preset === "box" || style.preset === "pop");
-  const combo = style.preset === "combo" ? currentCombo() : null;
-  const boxFx = new Set(["sparkle", ...PARTICLES, ...BARS]);
-  const needFx = !!combo?.roles.some((r) => boxFx.has(r.fx?.type) || (r.anim?.type && r.anim.type !== "none"));
-  if (!needLines && !needFx) return captions;
+// Word placements for the server: the same layout the preview draws
+function withLayout(captions, style) {
   const p = ed.project;
-  const h = Math.min(p.height, 1280), w = (h * p.width) / p.height;
-  const host = document.createElement("div");
-  host.style.cssText = `position:fixed;left:-20000px;top:0;width:${w}px;height:${h}px;visibility:hidden;`;
-  const layer = document.createElement("div");
-  layer.className = "sub-layer";
-  host.appendChild(layer);
-  document.body.appendChild(host);
-  const ov = new SubtitleOverlay(layer);
-  ov.setFonts(fonts);
-  ov.setCombos(combos);
-  ov.configure({ style, width: p.width, height: p.height, displayHeight: h });
-  // word widths change during a caption only for the scaled-up active word
-  const perWord = (style.preset === "highlight" || style.preset === "wordbox") && Math.abs(style.wordScale - 1) > 1e-3;
-  try {
-    const toVideo = p.height / h;
-    return captions.map((cap) => {
-      if (!cap.words.length) return cap;
-      const out = { ...cap };
-      if (needLines) {
-        out.lines = perWord
-          ? cap.words.map((_, i) => ov.layoutStarts(cap, i))
-          : ov.layoutStarts(cap, cap.words.length - 1);
-      }
-      if (needFx) {
-        // boxes of sparkle words in video pixels — the server draws stars around them
-        ov.layoutStarts(cap, cap.words.length - 1);
-        out.fx = Object.fromEntries(Object.entries(ov.lastFxBoxes).map(([j, b]) => [j, b.map((v) => +(v * toVideo).toFixed(1))]));
-      }
-      return out;
-    });
-  } finally {
-    host.remove();
-  }
+  return layoutAll(captions, { style, W: p.width, H: p.height, fonts: fontMap });
 }
 
 async function render() {
@@ -1300,7 +1016,7 @@ async function render() {
     await flushSave();
     const { job } = await api(`/api/projects/${ed.project.id}/render`, {
       method: "POST",
-      body: { captions: withLines(ed.captions, ed.style), style: ed.style },
+      body: { captions: withLayout(ed.captions, ed.style), style: ed.style },
     });
     await pollJob(job, $("#render-progress"));
     showResult();
@@ -1316,13 +1032,13 @@ $("#btn-export-top").onclick = () => switchTab("export");
 
 $$("[data-dl]").forEach((b) => (b.onclick = async () => {
   const name = ed.project.name || "subtitles";
-  const up = ed.style.uppercase;
+  const up = false;
   const kind = b.dataset.dl;
   if (kind === "srt") download(`${name}.srt`, toSRT(ed.captions, up));
   if (kind === "vtt") download(`${name}.vtt`, toVTT(ed.captions, up), "text/vtt");
   if (kind === "txt") download(`${name}.txt`, toTXT(ed.captions));
   if (kind === "ass") {
-    const ass = await api(`/api/projects/${ed.project.id}/ass`, { method: "POST", body: { captions: withLines(ed.captions, ed.style), style: ed.style } });
+    const ass = await api(`/api/projects/${ed.project.id}/ass`, { method: "POST", body: { captions: withLayout(ed.captions, ed.style), style: ed.style } });
     download(`${name}.ass`, ass);
   }
 }));
@@ -1357,16 +1073,18 @@ document.addEventListener("keydown", (e) => {
 
 // ------------------------------------------------------------------ startup
 
-renderPresets();
 Promise.all([
-  loadFonts(),
-  Promise.all([api("/combos.json"), api("/api/custom-combos")]).then(([builtin, custom]) => (combos = [...builtin, ...custom])),
+  loadFonts().catch(() => toast("Failed to load fonts", true)),
   api("/stopwords.json").then(setStopwords),
 ])
   .then(() => {
+    fontMap = Object.fromEntries(fonts.map((f) => [f.name, f]));
     overlay.setFonts(fonts);
-    overlay.setCombos(combos);
-    renderCombos();
+    renderLooks();
+    if (ed.project) updateOverlay(true);
   })
-  .catch(() => toast("Failed to load fonts", true))
+  .catch((e) => {
+    console.error(e);
+    toast(e.message, true);
+  })
   .finally(route);

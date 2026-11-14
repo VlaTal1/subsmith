@@ -28,13 +28,13 @@ Spacing uses a 4px grid: 4, 8, 12, 16, 24, 32. Gaps between controls are 8; card
 
 Need a value that isn't here? Add a token to `:root` with a comment, don't hardcode it.
 
-**Allowed raw values (exceptions):** `#000`/`#fff` and black scrims on video surfaces (the editor stage, the prompter screen in `teleprompter.css`, render previews); `.pv-*` style previews, `.fp-sample` font samples and `.sub-*`/`.fx-*` subtitle rendering (that's subtitle content, not UI); the 2px logo bars; keyframes.
+**Allowed raw values (exceptions):** `#000`/`#fff` and black scrims on video surfaces (the editor stage, the prompter screen in `teleprompter.css`, render previews); subtitle rendering — `.sub-*` in the SVG overlay, `.look-pv`/`.look-svg` look cards (that's subtitle content, not UI); the 2px logo bars; keyframes.
 
 ## Accent rules
 
 One accent hue (amber `#ff7a33`). It means "primary action, selected, focused, playing" — nothing else.
 - Max **one** `.btn.primary` visible per panel/region.
-- Selected state = accent border (+ `--accent-soft` fill for tiles/chips). Segmented controls use `--surface-3` fill, no accent.
+- Selected state = accent border (+ `--accent-soft` fill for chips; a 2px accent ring for swatches).
 - Text on an accent fill uses `--accent-ink` (dark), never white.
 - No gradients, glows or colored shadows in UI chrome. No second accent color.
 
@@ -44,8 +44,9 @@ One accent hue (amber `#ff7a33`). It means "primary action, selected, focused, p
 - Inputs: native `input/select/textarea` are already styled; checkboxes are custom via `appearance: none`.
 - Cards: `.card` with an `<h3>` title as first child. Optional helper text under the title: `<p class="hint">`; helper text at the end of a card: `.hint.hint-after`.
 - Label-left rows: `.slider` (label / range / value) and `.tool-row` + `.tool-label`.
-- Option groups: `.seg` (2–3 mutually exclusive options), `.chips-grid` (many options).
-- Tiles: `.preset` (style cards), `.project` (project cards).
+- Color choice: `.swatches` > `.swatch` (`--c` custom property) next to native color inputs in `.colors.two`.
+- Tiles: `.look` (subtitle style cards with a live layout preview), `.project` (project cards).
+- Word chips: `.chips` > `.chip` (`.role-1` = accent word).
 - Tabs: `.tabs` + `.tab`.
 
 ## Icons
@@ -78,9 +79,9 @@ CSS changes are not done until seen.
 
 ```bash
 # raw colors outside :root (review each hit against the exceptions above)
-awk '/^}/{f=1;next} f' static/css/style.css | grep -nE '#[0-9a-fA-F]{3,8}\b|rgba?\(' | grep -vE '\.(pv|sub|fx|card-anim)|@keyframes|#000|#fff'
+awk '/^}/{f=1;next} f' static/css/style.css | grep -nE '#[0-9a-fA-F]{3,8}\b|rgba?\(' | grep -vE '\.(sub|look)|@keyframes|#000|#fff'
 # hardcoded font sizes / radii
-grep -nE 'font-size: [0-9]+px|border-radius: [0-9]+px' static/css/style.css | grep -vE '\.(pv|fx|sub|fp-sample|logo)'
+grep -nE 'font-size: [0-9]+px|border-radius: [0-9]+px' static/css/style.css | grep -vE '\.(sub|look|logo)'
 # glyph icons that should be SVG
 grep -nP '[←↶↷▶❚⤡⤢✥✂⤒⤓＋✕⌖✎↵⬇🎙⟲●▾]' static/*.html static/js/app.js static/js/teleprompter.js
 ```

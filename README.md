@@ -6,7 +6,7 @@ A self-hosted web app for automatic video subtitles, in the spirit of Captions-s
 
 - **Speech recognition** — Whisper (faster-whisper) with word-level timestamps and automatic language detection (en, uk, ru and more), plus Vosk for Ukrainian.
 - **Editor** — edit text, split and merge captions, drag caption boundaries on the timeline, find and replace, shift all timings, undo (Ctrl+Z).
-- **Styles** — active word highlight, word box, karaoke, one word at a time, classic, boxed; font-mix combo styles with effects (glow, sparkles, hearts, confetti…) and animations; Cyrillic-ready fonts, colors, outline, shadow, position. The browser preview matches the final video.
+- **Looks** — nine typographic styles that mix plain and fancy fonts (Editorial, Couture, Diary, Punch, Neon note, Bloom, Sketch, Vogue, Clean). Each caption gets its own arrangement from its text: length, accent word, punctuation; some looks alternate sides and keep the previous caption on screen. The accent color can be picked automatically to stand out from the video. The browser computes the layout once, and both the preview and the burned-in video draw exactly that layout.
 - **Export** — MP4 with burned-in subtitles (ffmpeg + libass), plus SRT / VTT / ASS / TXT.
 - **Teleprompter** — scrolling script, adjustable speed, mirror mode, camera recording in 9:16 or 16:9. The recording goes straight into the editor, and the script is used as a recognition hint.
 
@@ -28,8 +28,8 @@ The teleprompter camera only works on `localhost` or over HTTPS (a browser restr
 
 - `app/server.py` — API (projects, background transcription and render jobs), frontend serving.
 - `app/transcribe.py`, `app/vosk_stt.py` — speech recognition (Whisper, Vosk).
-- `app/ass.py` — ASS subtitle generation for every style; `app/anim.py`, `app/particles.py` — animations and particle effects.
-- `static/` — build-free frontend: `js/overlay.js` (live preview), `js/captions.js` (caption logic), `js/app.js` (editor), `js/teleprompter.js`.
+- `app/ass.py` — draws the browser's word layout as ASS events; `app/anim.py`, `app/particles.py` — animations and particle effects.
+- `static/` — build-free frontend: `js/looks.js` (style templates, video palette), `js/layout.js` (layout engine), `js/overlay.js` (SVG preview), `js/captions.js` (caption logic), `js/app.js` (editor), `js/teleprompter.js`.
 - `fonts/` — fonts shared by the preview and the renderer.
 - `data/projects/<id>/` — source video, `project.json`, rendered output.
 

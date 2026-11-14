@@ -20,9 +20,7 @@ from fontTools.ttLib import TTFont
 from pydantic import BaseModel
 
 from . import transcribe as stt
-from .anim import ANIMS
-from .particles import BARS, PARTICLES
-from .ass import CUSTOM_COMBOS_FILE, DEFAULT_STYLE, build_ass, load_custom_combos
+from .ass import DEFAULT_STYLE, build_ass
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data" / "projects"
@@ -193,11 +191,14 @@ def get_ass(pid: str, req: RenderRequest):
 def _font_info(path: Path) -> dict:
     font = TTFont(path)
     os2 = font["OS/2"]
+    total = os2.usWinAscent + os2.usWinDescent
     # libass scales the font so that winAscent+winDescent == size; in CSS the size is the em
     return {
         "name": font["name"].getDebugName(1),
         "file": path.name,
-        "cssScale": font["head"].unitsPerEm / (os2.usWinAscent + os2.usWinDescent),
+        "cssScale": font["head"].unitsPerEm / total,
+        "asc": os2.usWinAscent / total,
+        "desc": os2.usWinDescent / total,
     }
 
 
@@ -207,85 +208,6 @@ FONT_LIST = [_font_info(f) for f in sorted(FONTS.glob("*.ttf"))]
 @app.get("/api/fonts")
 def list_fonts():
     return FONT_LIST
-
-
-# ---------------------------------------------------------------- custom styles (library shared by all projects)
-
-HEX_COLOR = re.compile(r"#[0-9A-Fa-f]{6}")
-
-
-def clean_combo(cid: str, data: dict) -> dict:
-    fonts = {f["name"] for f in FONT_LIST}
-    if data.get("layout") not in ("stack", "accent"):
-        raise HTTPException(400, "Unknown layout")
-    roles_in = data.get("roles") or []
-    if len(roles_in) != 2:
-        raise HTTPException(400, "Exactly two fonts are required")
-    roles = []
-    for r in roles_in:
-        if r.get("font") not in fonts:
-            raise HTTPException(400, f"Font not found: {r.get('font')}")
-        role = {"font": r["font"], "size": round(min(3.0, max(0.4, float(r.get("size", 1)))), 2)}
-        if r.get("case") in ("upper", "lower"):
-            role["case"] = r["case"]
-        if r.get("color") == "accent":
-            role["color"] = "accent"
-        if float(r.get("spacing") or 0) > 0:
-            role["spacing"] = round(min(0.5, float(r["spacing"])), 3)
-        fx = r.get("fx") or {}
-        if fx.get("type") in ("glow", "shadow", "outline", "sparkle", *PARTICLES, *BARS):
-            role["fx"] = {
-                "type": fx["type"],
-                "color": fx.get("color") if HEX_COLOR.fullmatch(str(fx.get("color"))) else "#FFFFFF",
-                "strength": round(min(10.0, max(1.0, float(fx.get("strength", 5)))), 1),
-            }
-        an = r.get("anim") or {}
-        if an.get("type") in ANIMS:
-            role["anim"] = {
-                "type": an["type"],
-                "strength": round(min(10.0, max(1.0, float(an.get("strength", 5)))), 1),
-                "speed": round(min(10.0, max(1.0, float(an.get("speed", 5)))), 1),
-            }
-        roles.append(role)
-    st = data.get("style") or {}
-    style = {
-        "color": st.get("color") if HEX_COLOR.fullmatch(str(st.get("color"))) else "#FFFFFF",
-        "highlightColor": st.get("highlightColor") if HEX_COLOR.fullmatch(str(st.get("highlightColor"))) else "#FFE45C",
-        "fontSize": round(min(14.0, max(2.5, float(st.get("fontSize", 5)))), 1),
-        "outline": round(min(20.0, max(0.0, float(st.get("outline", 3)))), 1),
-        "lineSpacing": round(min(2.5, max(0.5, float(st.get("lineSpacing", 1)))), 2),
-    }
-    name = (str(data.get("name") or "").strip() or "My style")[:40]
-    return {"id": cid, "name": name, "layout": data["layout"], "roles": roles, "style": style, "custom": True}
-
-
-def save_custom_combos(items: list[dict]) -> None:
-    tmp = CUSTOM_COMBOS_FILE.with_suffix(".tmp")
-    tmp.write_text(json.dumps(items, ensure_ascii=False, indent=1), "utf-8")
-    tmp.replace(CUSTOM_COMBOS_FILE)
-
-
-@app.get("/api/custom-combos")
-def list_custom_combos():
-    return load_custom_combos()
-
-
-@app.put("/api/custom-combos/{cid}")
-def put_custom_combo(cid: str, data: dict):
-    if not re.fullmatch(r"custom-[a-z0-9]{4,16}", cid):
-        raise HTTPException(400, "Invalid identifier")
-    combo = clean_combo(cid, data)
-    items = [c for c in load_custom_combos() if c["id"] != cid]
-    old = next((i for i, c in enumerate(load_custom_combos()) if c["id"] == cid), len(items))
-    items.insert(old, combo)
-    save_custom_combos(items)
-    return combo
-
-
-@app.delete("/api/custom-combos/{cid}")
-def delete_custom_combo(cid: str):
-    save_custom_combos([c for c in load_custom_combos() if c["id"] != cid])
-    return {"ok": True}
 
 
 # ---------------------------------------------------------------- background jobs
@@ -358,8 +280,8 @@ def start_transcribe(pid: str, req: TranscribeRequest):
 def start_render(pid: str, req: RenderRequest):
     p = load_project(pid)
     d = project_dir(pid)
-    # "lines" and "fx" are helper markup from the preview for this render; not saved to the project
-    p["captions"] = [{k: v for k, v in c.items() if k not in ("lines", "fx")} for c in req.captions]
+    # "place" is the layout from the preview for this render; not saved to the project
+    p["captions"] = [{k: v for k, v in c.items() if k != "place"} for c in req.captions]
     p["style"] = req.style
     save_project(p)
 

@@ -1,6 +1,9 @@
 The fonts in this directory are licensed under the SIL Open Font License, Version 1.1.
 Copyright notices, as embedded in each font file:
 
+AmaticSCBold.ttf (Amatic SC Bold):
+Copyright 2015 The Amatic SC Project Authors (https://github.com/googlefonts/AmaticSC)
+
 BadScript.ttf (Bad Script):
 Copyright 2011 The Bad Script Project Authors (https://github.com/alexeiva/badscript)
 
@@ -13,11 +16,17 @@ Copyright 2011 The Comfortaa Project Authors (https://github.com/alexeiva/comfor
 CormorantItalic.ttf (Cormorant Italic):
 Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)
 
+DelaGothicOne.ttf (Dela Gothic One):
+Copyright 2020 The Dela Gothic Project Authors (https://github.com/syakuzen/DelaGothic)
+
 GreatVibes.ttf (Great Vibes):
 Copyright 2010 The Great Vibes Pro Project Authors (https://github.com/googlefonts/great-vibes)
 
 Inter.ttf (Inter):
 Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
+
+Kurale.ttf (Kurale):
+Copyright 2013 The Kurale Project Authors (edu@tipo.net.ar)
 
 Lobster.ttf (Lobster):
 Copyright 2010 The Lobster Project Authors (https://github.com/impallari/The-Lobster-Font), with Reserved Font Name "Lobster".
@@ -26,6 +35,12 @@ MarckScript.ttf (Marck Script):
 Copyright (c) 2011, Denis Masharov <denis.masharov@gmail.com>, Marck Fogel, with Reserved Font Names "Marck Script".
 
 Montserrat.ttf (Montserrat):
+Copyright 2011 The Montserrat Project Authors (https://github.com/JulietaUla/Montserrat)
+
+MontserratBlack.ttf (Montserrat Black):
+Copyright 2011 The Montserrat Project Authors (https://github.com/JulietaUla/Montserrat)
+
+MontserratExtraBold.ttf (Montserrat ExtraBold):
 Copyright 2011 The Montserrat Project Authors (https://github.com/JulietaUla/Montserrat)
 
 MontserratSemiBold.ttf (Montserrat SemiBold):
@@ -37,11 +52,23 @@ Copyright 2016 The Oswald Project Authors (https://github.com/googlefonts/Oswald
 PTSansNarrow.ttf (PT Sans Narrow):
 Copyright © 2009 ParaType Ltd. All rights reserved.
 
+Pacifico.ttf (Pacifico):
+Copyright 2018 The Pacifico Project Authors (https://github.com/googlefonts/Pacifico)
+
 PlayfairDisplay.ttf (Playfair Display):
+Copyright 2017 The Playfair Display Project Authors (https://github.com/clauseggers/Playfair-Display), with Reserved Font Name "Playfair Display".
+
+PlayfairDisplayBlackItalic.ttf (Playfair Display Black Italic):
+Copyright 2017 The Playfair Display Project Authors (https://github.com/clauseggers/Playfair-Display), with Reserved Font Name "Playfair Display".
+
+PlayfairDisplayBoldItalic.ttf (Playfair Display Bold Italic):
 Copyright 2017 The Playfair Display Project Authors (https://github.com/clauseggers/Playfair-Display), with Reserved Font Name "Playfair Display".
 
 PlayfairDisplayItalic.ttf (Playfair Display Italic):
 Copyright 2017 The Playfair Display Project Authors (https://github.com/clauseggers/Playfair-Display), with Reserved Font Name "Playfair Display".
+
+Prata.ttf (Prata):
+Copyright 2011 The Prata Project Authors (contact@cyreal.org)
 
 Roboto.ttf (Roboto):
 Copyright 2011 The Roboto Project Authors (https://github.com/googlefonts/roboto-classic)
@@ -54,6 +81,9 @@ Copyright (c) 2011-2012, Jovanny Lemonad (jovanny.ru), with Reserved Font Name "
 
 Unbounded.ttf (Unbounded):
 Copyright 2022 The Unbounded Project Authors (https://github.com/googlefonts/unbounded)
+
+YesevaOne.ttf (Yeseva One):
+Copyright 2012 The Yeseva One Project Authors (lemonad@jovanny.ru), with Reserved Font Name "Yeseva".
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:

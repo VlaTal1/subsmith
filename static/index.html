@@ -150,107 +150,34 @@
 
         <!-- ---------- Style ---------- -->
         <div class="tab" data-tab="style" hidden>
-          <div id="presets" class="presets"></div>
-          <h4 class="group-title">Font mix · words appear as they are spoken</h4>
-          <div id="combos" class="presets"></div>
-
-          <div id="combo-editor" class="card combo-editor" hidden>
-            <h3 id="ce-title">Custom style</h3>
-            <label>Name <input id="ce-name" maxlength="40" placeholder="My style"></label>
-            <div class="seg" id="ce-layout">
-              <button data-v="stack">Line by line</button>
-              <button data-v="accent">Accent word</button>
-            </div>
-            <p id="ce-layout-hint" class="small muted"></p>
-            <div class="ce-role" data-role="0">
-              <div class="ce-role-title">Main font</div>
-              <div class="font-picker ce-font"></div>
-              <div class="slider"><span>Size</span><input class="ce-size" type="range" min="0.5" max="2.5" step="0.05"><output></output></div>
-              <div class="slider"><span>Letter spacing</span><input class="ce-spacing" type="range" min="0" max="0.4" step="0.01"><output></output></div>
-              <div class="seg small ce-case">
-                <button data-v="">As is</button><button data-v="upper">UPPERCASE</button><button data-v="lower">lowercase</button>
-              </div>
-            </div>
-            <div class="ce-role" data-role="1">
-              <div class="ce-role-title">Second font</div>
-              <div class="font-picker ce-font"></div>
-              <div class="slider"><span>Size</span><input class="ce-size" type="range" min="0.5" max="2.5" step="0.05"><output></output></div>
-              <div class="slider"><span>Letter spacing</span><input class="ce-spacing" type="range" min="0" max="0.4" step="0.01"><output></output></div>
-              <div class="seg small ce-case">
-                <button data-v="">As is</button><button data-v="upper">UPPERCASE</button><button data-v="lower">lowercase</button>
-              </div>
-              <label class="check"><input class="ce-accent" type="checkbox"> Second color</label>
-              <div class="ce-fx">
-                <div class="ce-role-title">Effect</div>
-                <div class="chips-grid ce-fx-type">
-                  <button data-v="">None</button><button data-v="glow">Glow</button><button data-v="shadow">Shadow</button>
-                  <button data-v="outline">Outline</button><button data-v="marker">Marker</button><button data-v="underline">Underline</button>
-                  <button data-v="sparkle">Sparkles</button><button data-v="hearts">Hearts</button><button data-v="confetti">Confetti</button>
-                  <button data-v="fireflies">Fireflies</button><button data-v="bubbles">Bubbles</button><button data-v="snow">Snow</button>
-                  <button data-v="burst">Burst</button>
-                </div>
-                <div class="ce-fx-opts">
-                  <div class="row">
-                    <label class="inline">Color <input class="ce-fx-color" type="color"></label>
-                  </div>
-                  <div class="slider"><span class="ce-fx-strength-label">Strength</span><input class="ce-fx-strength" type="range" min="1" max="10" step="1"><output></output></div>
-                </div>
-                <div class="ce-role-title">Animation</div>
-                <div class="chips-grid ce-anim-type">
-                  <button data-v="">None</button><button data-v="pulse">Pulse</button><button data-v="float">Wave</button>
-                  <button data-v="swing">Swing</button><button data-v="shake">Shake</button><button data-v="flicker">Flicker</button>
-                  <button data-v="rainbow">Rainbow</button><button data-v="bounce">Bounce</button><button data-v="glowpulse">Glow pulse</button>
-                </div>
-                <div class="ce-anim-opts">
-                  <div class="slider"><span>Strength</span><input class="ce-anim-strength" type="range" min="1" max="10" step="1"><output></output></div>
-                  <div class="slider"><span>Speed</span><input class="ce-anim-speed" type="range" min="1" max="10" step="1"><output></output></div>
-                </div>
-              </div>
-            </div>
-            <div class="colors two">
-              <label>Main color <input id="ce-color" type="color"></label>
-              <label>Second color <input id="ce-color2" type="color"></label>
-            </div>
-            <div class="row">
-              <button id="ce-save" class="btn primary grow">Save</button>
-              <button id="ce-cancel" class="btn">Cancel</button>
-              <button id="ce-delete" class="btn ghost danger" title="Delete style">Delete</button>
-            </div>
-          </div>
-          <div class="card">
-            <h3>Text</h3>
-            <label data-for="font">Font <select id="st-font"></select></label>
-            <div class="slider"><span>Size</span><input id="st-fontSize" type="range" min="2.5" max="14" step="0.1"><output></output></div>
-            <label class="check"><input id="st-uppercase" type="checkbox"> UPPERCASE</label>
-            <label class="check" data-for="reveal"><input id="st-reveal" type="checkbox"> Words appear as they are spoken</label>
-          </div>
+          <div id="looks" class="looks"></div>
           <div class="card">
             <h3>Colors</h3>
-            <div class="colors">
-              <label data-for="color">Text <input id="st-color" type="color"></label>
-              <label data-for="highlightColor">Accent <input id="st-highlightColor" type="color"></label>
-              <label data-for="outlineColor">Outline <input id="st-outlineColor" type="color"></label>
-              <label data-for="boxColor">Background <input id="st-boxColor" type="color"></label>
+            <label class="check"><input id="st-auto" type="checkbox"> Match the video</label>
+            <p id="st-auto-note" class="hint hint-after"></p>
+            <div id="st-swatches" class="swatches"></div>
+            <div class="colors two">
+              <label>Main <input id="st-main" type="color"></label>
+              <label>Accent <input id="st-accent" type="color"></label>
             </div>
-            <div class="slider" data-for="outline"><span>Outline</span><input id="st-outline" type="range" min="0" max="20" step="0.5"><output></output></div>
-            <div class="slider" data-for="shadow"><span>Shadow</span><input id="st-shadow" type="range" min="0" max="20" step="0.5"><output></output></div>
-            <div class="slider" data-for="boxOpacity"><span>Background opacity</span><input id="st-boxOpacity" type="range" min="0" max="1" step="0.05"><output></output></div>
-            <div class="slider" data-for="wordScale"><span>Word scale</span><input id="st-wordScale" type="range" min="1" max="1.5" step="0.01"><output></output></div>
           </div>
           <div class="card">
-            <h3>Position &amp; motion</h3>
-            <p class="hint">You can also drag the text right on the video.</p>
-            <div class="slider"><span>Horizontal</span><input id="st-x" type="range" min="5" max="95" step="0.5"><output></output></div>
-            <div class="slider"><span>From bottom</span><input id="st-position" type="range" min="2" max="90" step="1"><output></output></div>
-            <div class="slider" data-for="lineSpacing"><span>Line spacing</span><input id="st-lineSpacing" type="range" min="0.6" max="2" step="0.05"><output></output></div>
-            <div class="slider"><span>Block width</span><input id="st-maxWidth" type="range" min="30" max="100" step="1"><output></output></div>
-            <label data-for="animation">Entrance
-              <select id="st-animation">
-                <option value="none">No animation</option>
-                <option value="pop">Pop</option>
+            <h3>Size &amp; motion</h3>
+            <div class="slider"><span>Size</span><input id="st-size" type="range" min="0.6" max="1.6" step="0.05"><output></output></div>
+            <label>Entrance
+              <select id="st-entrance">
+                <option value="">Style default</option>
+                <option value="rise">Rise</option>
                 <option value="fade">Fade</option>
+                <option value="pop">Pop</option>
+                <option value="none">None</option>
               </select>
             </label>
+            <div class="tool-row">
+              <span class="hint-inline">Drag the text right on the video to move it.</span>
+              <div class="spacer"></div>
+              <button id="st-reset-pos" class="btn small ghost"><i data-icon="rotate-ccw"></i>Reset</button>
+            </div>
           </div>
         </div>
 

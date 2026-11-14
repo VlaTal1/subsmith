@@ -46,6 +46,7 @@ export class SubtitleOverlay {
     layer.appendChild(this.svg);
     this.fonts = {};
     this.blocks = new Map(); // caption index → rendered block
+    this.selected = -1;
     this.filters = new Map();
   }
 
@@ -59,6 +60,12 @@ export class SubtitleOverlay {
     this.H = height;
     this.svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
     this.clear();
+  }
+
+  // The selected caption shows its frame and resize handle
+  setSelected(i) {
+    this.selected = i;
+    for (const [k, b] of this.blocks) b.g.classList.toggle("selected", k === i);
   }
 
   clear() {
@@ -111,6 +118,7 @@ export class SubtitleOverlay {
     const g = el("g", { class: "sub-block", "data-i": i }, this.root);
     el("rect", { class: "sub-hit", x: lay.box.x, y: lay.box.y, width: lay.box.w, height: lay.box.h }, g);
     g.classList.toggle("own-pos", !!cap.pos || !!cap.scale);
+    g.classList.toggle("selected", i === this.selected);
     const under = el("g", {}, g); // markers sit under the text
     const words = el("g", {}, g);
     const over = el("g", {}, g); // particles and sparkles on top
@@ -150,7 +158,9 @@ export class SubtitleOverlay {
       return item;
     });
     // resize handle on the bottom-right corner, drawn above the words
-    el("circle", { class: "sub-resize", cx: lay.box.x + lay.box.w, cy: lay.box.y + lay.box.h, r: this.H * 0.016 }, g);
+    // fingers need a bigger target than a mouse pointer
+    const touch = matchMedia("(hover: none)").matches;
+    el("circle", { class: "sub-resize", cx: lay.box.x + lay.box.w, cy: lay.box.y + lay.box.h, r: this.H * (touch ? 0.03 : 0.016) }, g);
     return { g, key: blockKey(cap), lay, items, end: cap.end, entrance: ENTRANCE[lay.entrance] || ENTRANCE.none };
   }
 

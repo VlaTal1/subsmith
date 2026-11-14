@@ -286,17 +286,23 @@ input[type="range"] { accent-color: var(--accent); padding: 0; border: 0; backgr
 #render-result video { width: 100%; max-height: 360px; background: #000; border-radius: var(--r-md); margin: 12px 0; }
 
 /* ------------------------------------------------ subtitle overlay */
-.sub-layer { position: absolute; inset: 0; overflow: hidden; }
+.sub-layer { position: absolute; inset: 0; overflow: hidden; touch-action: none; } /* drags on the video are ours, not the browser's pan/zoom */
 .sub-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .sub-svg text { white-space: pre; }
-.sub-block { pointer-events: auto; cursor: grab; }
+.sub-block { pointer-events: auto; cursor: grab; touch-action: none; }
 .sub-hit { fill: transparent; }
-.sub-block:hover .sub-hit, .sub-block.dragging .sub-hit { stroke: rgb(255 255 255 / .6); stroke-dasharray: 8 6; stroke-width: 2; vector-effect: non-scaling-stroke; }
-.sub-block.own-pos:hover .sub-hit, .sub-block.own-pos.dragging .sub-hit { stroke: var(--accent); }
+.sub-block.selected .sub-hit, .sub-block.dragging .sub-hit { stroke: rgb(255 255 255 / .6); stroke-dasharray: 8 6; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.sub-block.own-pos.selected .sub-hit, .sub-block.own-pos.dragging .sub-hit { stroke: var(--accent); }
 .sub-block.dragging { cursor: grabbing; }
+/* the resize handle exists only on the selected caption (and under the mouse) */
+.sub-resize { fill: #fff; stroke: var(--accent); stroke-width: 3px; vector-effect: non-scaling-stroke; opacity: 0; pointer-events: none; cursor: nwse-resize; transition: opacity var(--ease); }
+.sub-block.selected .sub-resize, .sub-block.dragging .sub-resize { opacity: 1; pointer-events: auto; }
+@media (hover: hover) {
+  .sub-block:hover .sub-hit { stroke: rgb(255 255 255 / .6); stroke-dasharray: 8 6; stroke-width: 2; vector-effect: non-scaling-stroke; }
+  .sub-block.own-pos:hover .sub-hit { stroke: var(--accent); }
+  .sub-block:hover .sub-resize { opacity: 1; pointer-events: auto; }
+}
 .snap-guide { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; border-left: 1px dashed var(--accent); pointer-events: none; }
-.sub-resize { fill: #fff; stroke: var(--accent); stroke-width: 3px; vector-effect: non-scaling-stroke; opacity: 0; cursor: nwse-resize; transition: opacity var(--ease); }
-.sub-block:hover .sub-resize, .sub-block.dragging .sub-resize { opacity: 1; }
 
 
 /* ------------------------------------------------ mobile */
@@ -326,4 +332,6 @@ input[type="range"] { accent-color: var(--accent); padding: 0; border: 0; backgr
 /* Keyboard shortcuts mean nothing on touch screens */
 @media (hover: none) {
   .keys-hint { display: none; }
+  /* no hover on touch screens: controls that appear on hover are always shown */
+  .p-del { opacity: 1; }
 }

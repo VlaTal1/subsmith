@@ -370,7 +370,10 @@ function anchorOf(i) {
 // Dragging a caption moves only that caption; dragging its corner handle resizes it
 $("#sub-layer").addEventListener("pointerdown", (e) => {
   const block = e.target.closest(".sub-block");
-  if (!block) return;
+  if (!block) {
+    if (ed.selected >= 0) select(-1); // a tap on the empty video drops the selection
+    return;
+  }
   const idx = +block.dataset.i;
   const cap = ed.captions[idx];
   if (!cap) return;
@@ -421,9 +424,12 @@ $("#sub-layer").addEventListener("pointerdown", (e) => {
     layer.onpointermove = layer.onpointerup = layer.onpointercancel = null;
     $$(".sub-block.dragging").forEach((b) => b.classList.remove("dragging"));
     $("#snap-guide").hidden = true;
-    if (!moved) return;
-    // A click after dragging must not toggle play/pause
+    // A tap or drag on a caption must not toggle play/pause
     $("#frame").addEventListener("click", (ev) => ev.stopPropagation(), { capture: true, once: true });
+    if (!moved) {
+      select(idx, true); // a tap selects the caption: frame + resize handle
+      return;
+    }
     ed.past.push(before);
     ed.future = [];
     renderCaptionList();
@@ -530,6 +536,7 @@ $("#zoom").oninput = (e) => {
 
 function select(i, scroll = false) {
   ed.selected = i;
+  overlay.setSelected(i);
   $$(".cap.selected, .tl-cap.selected").forEach((el) => el.classList.remove("selected"));
   $(`.cap[data-i="${i}"]`)?.classList.add("selected");
   $(`.tl-cap[data-i="${i}"]`)?.classList.add("selected");

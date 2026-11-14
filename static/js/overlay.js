@@ -110,7 +110,7 @@ export class SubtitleOverlay {
   renderBlock(cap, i, lay) {
     const g = el("g", { class: "sub-block", "data-i": i }, this.root);
     el("rect", { class: "sub-hit", x: lay.box.x, y: lay.box.y, width: lay.box.w, height: lay.box.h }, g);
-    g.classList.toggle("own-pos", !!cap.pos);
+    g.classList.toggle("own-pos", !!cap.pos || !!cap.scale);
     const under = el("g", {}, g); // markers sit under the text
     const words = el("g", {}, g);
     const over = el("g", {}, g); // particles and sparkles on top
@@ -149,6 +149,8 @@ export class SubtitleOverlay {
       if (fx && PARTICLES.includes(fx.type)) item.fx.push(...this.addParticles(over, cap, w, k));
       return item;
     });
+    // resize handle on the bottom-right corner, drawn above the words
+    el("circle", { class: "sub-resize", cx: lay.box.x + lay.box.w, cy: lay.box.y + lay.box.h, r: this.H * 0.016 }, g);
     return { g, key: blockKey(cap), lay, items, end: cap.end, entrance: ENTRANCE[lay.entrance] || ENTRANCE.none };
   }
 
@@ -265,7 +267,7 @@ export class SubtitleOverlay {
 }
 
 function blockKey(cap) {
-  return JSON.stringify([cap.start, cap.end, cap.pos, cap.words.map((w) => [w.text, w.start, w.em, w.br])]);
+  return JSON.stringify([cap.start, cap.end, cap.pos, cap.scale, cap.words.map((w) => [w.text, w.start, w.em, w.br])]);
 }
 
 function scaleAt([x, y], s) {

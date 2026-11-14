@@ -185,7 +185,7 @@ export function layoutCaption(cap, { style, W, H, fonts, index = 0 }) {
   const em = new Set(variant.split === "inline" && variant.base === variant.accent ? [] : emphasisIndices(words));
   const lastChar = words[n - 1].text.trim().slice(-1);
   const punch = lastChar === "!" || lastChar === "?" ? 1.08 : 1;
-  const baseEm = (H * look.base * style.size) / 100 * (variant.scale || 1);
+  const baseEm = (H * look.base * style.size * (cap.scale || 1)) / 100 * (variant.scale || 1);
   const scene = style.scene;
   const haloBoost = scene && scene.lum > 0.55 ? 1.35 : 1;
 
@@ -324,7 +324,7 @@ export function layoutCaption(cap, { style, W, H, fonts, index = 0 }) {
     words: out,
     box: { x: r1(left), y: r1(originY + top), w: r1(blockW), h: r1(blockH) },
     entrance: style.entrance || look.entrance,
-    hold: !!look.hold && !cap.pos,
+    hold: !!look.hold,
   };
 }
 
@@ -337,7 +337,7 @@ export function visibleRanges(captions, style) {
   const look = getLook(style.look);
   return captions.map((c, i) => {
     let end = c.end;
-    if (look.hold && !c.pos && captions[i + 1] && !captions[i + 1].pos) end = Math.max(c.end, captions[i + 1].end);
+    if (look.hold && captions[i + 1]) end = Math.max(c.end, captions[i + 1].end);
     return [c.start, end];
   });
 }

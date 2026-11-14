@@ -295,7 +295,8 @@ input[type="range"] { accent-color: var(--accent); padding: 0; border: 0; backgr
 .sub-block.own-pos:hover .sub-hit, .sub-block.own-pos.dragging .sub-hit { stroke: var(--accent); }
 .sub-block.dragging { cursor: grabbing; }
 .snap-guide { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; border-left: 1px dashed var(--accent); pointer-events: none; }
-#btn-move-mode.on { color: var(--accent-text); }
+.sub-resize { fill: #fff; stroke: var(--accent); stroke-width: 3px; vector-effect: non-scaling-stroke; opacity: 0; cursor: nwse-resize; transition: opacity var(--ease); }
+.sub-block:hover .sub-resize, .sub-block.dragging .sub-resize { opacity: 1; }
 
 
 /* ------------------------------------------------ mobile */

@@ -358,19 +358,6 @@ function seek(t) {
 
 // ------------------------------------------------------------------ dragging text over the video
 
-let moveOne = localStorage.getItem("move-one") === "1";
-function syncMoveMode() {
-  setIcon($("#btn-move-mode"), "move", moveOne ? "This caption" : "All captions");
-  $("#btn-move-mode").classList.toggle("on", moveOne);
-}
-syncMoveMode();
-$("#btn-move-mode").onclick = () => {
-  moveOne = !moveOne;
-  localStorage.setItem("move-one", moveOne ? "1" : "0");
-  syncMoveMode();
-  toast(moveOne ? "Dragging moves only the current caption" : "Dragging moves all captions");
-};
-
 // Anchor of caption i in % of the frame: its own position, or the look's slot moved by the global offset
 function anchorOf(i) {
   const cap = ed.captions[i];
@@ -380,6 +367,7 @@ function anchorOf(i) {
   return { x: slot.x + ed.style.offset.x, y: slot.y + ed.style.offset.y };
 }
 
+// Dragging a caption moves only that caption; dragging its corner handle resizes it
 $("#sub-layer").addEventListener("pointerdown", (e) => {
   const block = e.target.closest(".sub-block");
   if (!block) return;
@@ -387,11 +375,14 @@ $("#sub-layer").addEventListener("pointerdown", (e) => {
   const cap = ed.captions[idx];
   if (!cap) return;
   e.preventDefault();
+  const resize = e.target.classList.contains("sub-resize");
   const frame = $("#frame").getBoundingClientRect();
-  // A caption with its own position always moves on its own; otherwise per the toggle mode
-  const own = moveOne || !!cap.pos;
   const start = anchorOf(idx);
-  const offset0 = { ...ed.style.offset };
+  const scale0 = cap.scale || 1;
+  // resizing is measured from the block's center: twice as far from it = twice as big
+  const hit = block.querySelector(".sub-hit").getBoundingClientRect();
+  const cx = hit.left + hit.width / 2, cy = hit.top + hit.height / 2;
+  const d0 = Math.max(10, Math.hypot(e.clientX - cx, e.clientY - cy));
   const before = JSON.stringify(ed.captions);
   const x0 = e.clientX, y0 = e.clientY;
   let moved = false;
@@ -399,25 +390,32 @@ $("#sub-layer").addEventListener("pointerdown", (e) => {
   layer.setPointerCapture(e.pointerId);
   block.classList.add("dragging");
 
+  const setCap = (patch) => {
+    const caps = ed.captions.slice();
+    caps[idx] = { ...ed.captions[idx], ...patch };
+    ed.captions = caps;
+    updateOverlay(true);
+  };
+
   layer.onpointermove = (ev) => {
     if (!moved && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 4) return;
     moved = true;
+    if (resize) {
+      const k = Math.hypot(ev.clientX - cx, ev.clientY - cy) / d0;
+      const scale = Math.round(Math.max(0.4, Math.min(3, scale0 * k)) * 100) / 100;
+      // the block grows around its anchor; keep the anchor where it is
+      setCap({ scale, pos: cap.pos || start });
+      return;
+    }
     const dx = ((ev.clientX - x0) / frame.width) * 100;
     const dy = -((ev.clientY - y0) / frame.height) * 100;
     let x = Math.max(0, Math.min(100, start.x + dx));
     const y = Math.round(Math.max(0, Math.min(98, start.y + dy)) * 10) / 10;
-    const snap = Math.abs(x - 50) < 2.5 && getLook(ed.style.look).place.slots[0].align === "center";
+    const slots = getLook(ed.style.look).place.slots;
+    const snap = Math.abs(x - 50) < 2.5 && slots[idx % slots.length].align === "center";
     if (snap) x = 50;
     $("#snap-guide").hidden = !snap;
-    x = Math.round(x * 10) / 10;
-    if (own) {
-      const caps = ed.captions.slice();
-      caps[idx] = { ...ed.captions[idx], pos: { x, y } };
-      ed.captions = caps;
-    } else {
-      ed.style = { ...ed.style, offset: { x: Math.round((offset0.x + x - start.x) * 10) / 10, y: Math.round((offset0.y + y - start.y) * 10) / 10 } };
-    }
-    updateOverlay(true);
+    setCap({ pos: { x: Math.round(x * 10) / 10, y } });
   };
   layer.onpointerup = layer.onpointercancel = () => {
     layer.onpointermove = layer.onpointerup = layer.onpointercancel = null;
@@ -426,12 +424,11 @@ $("#sub-layer").addEventListener("pointerdown", (e) => {
     if (!moved) return;
     // A click after dragging must not toggle play/pause
     $("#frame").addEventListener("click", (ev) => ev.stopPropagation(), { capture: true, once: true });
-    if (own) {
-      ed.past.push(before);
-      ed.future = [];
-      renderCaptionList();
-      $("#btn-undo").disabled = false;
-    }
+    ed.past.push(before);
+    ed.future = [];
+    renderCaptionList();
+    syncStyleControls();
+    $("#btn-undo").disabled = false;
     scheduleSave();
   };
 });
@@ -559,7 +556,7 @@ function renderCaptionList() {
         <span class="muted">→</span>
         <input class="t-end" value="${fmtTime(c.end)}" title="End">
         <div class="spacer"></div>
-        ${c.pos ? `<button class="btn ghost icon small pos-reset" data-act="unpos" title="Custom position — reset to shared">${icon("locate")}</button>` : ""}
+        ${c.pos || c.scale ? `<button class="btn ghost icon small pos-reset" data-act="unpos" title="Moved or resized — reset">${icon("locate")}</button>` : ""}
         <button class="btn ghost icon small" data-act="split" title="Split at cursor">${icon("scissors")}</button>
         <button class="btn ghost icon small" data-act="toPrev" title="Move text to the end of the previous caption (Backspace at the start)" ${i === 0 ? "disabled" : ""}>${icon("to-prev")}</button>
         <button class="btn ghost icon small" data-act="toNext" title="Move text to the start of the next caption" ${i === ed.captions.length - 1 ? "disabled" : ""}>${icon("to-next")}</button>
@@ -723,7 +720,7 @@ function capAction(act, i, ta) {
   const c = caps[i];
   if (act === "split") return doSplit(i, ta);
   if (act === "unpos") {
-    const { pos, ...rest } = c;
+    const { pos, scale, ...rest } = c;
     caps[i] = rest;
     return commit(caps);
   }
@@ -860,7 +857,7 @@ function syncStyleControls() {
   $("#st-size").value = s.size;
   $("#st-size").nextElementSibling.textContent = `${Math.round(s.size * 100)}%`;
   $("#st-entrance").value = s.entrance || "";
-  $("#st-reset-pos").disabled = !s.offset.x && !s.offset.y && !ed.captions.some((c) => c.pos);
+  $("#st-reset-pos").disabled = !s.offset.x && !s.offset.y && !ed.captions.some((c) => c.pos || c.scale);
 }
 
 $("#st-auto").onchange = (e) => {
@@ -882,7 +879,7 @@ $("#st-size").addEventListener("input", (e) => setStyle({ size: +e.target.value 
 $("#st-entrance").onchange = (e) => setStyle({ entrance: e.target.value || null });
 $("#st-reset-pos").onclick = () => {
   ed.style = { ...ed.style, offset: { x: 0, y: 0 } };
-  if (ed.captions.some((c) => c.pos)) commit(ed.captions.map(({ pos, ...c }) => c));
+  if (ed.captions.some((c) => c.pos || c.scale)) commit(ed.captions.map(({ pos, scale, ...c }) => c));
   setStyle({});
 };
 
